@@ -50,6 +50,10 @@ APPLIED_SKILLS = [
         "agent_use": "build metadata, subtitle references, and upload checklist packages",
     },
     {
+        "name": "lecture-youtube-uploader",
+        "agent_use": "upload approved publish packages to YouTube only after explicit upload and visibility approval",
+    },
+    {
         "name": "grill-me / grill-with-docs",
         "agent_use": "turn publish readiness into hard questions instead of silent assumptions",
     },
@@ -1276,6 +1280,253 @@ def run_continue(args: argparse.Namespace) -> int:
     return 2 if blockers else 0
 
 
+def optional_module(name: str) -> tuple[bool, str]:
+    spec = importlib.util.find_spec(name)
+    return bool(spec), "installed" if spec else "missing"
+
+
+def run_youtube_doctor(args: argparse.Namespace) -> int:
+    checks = [
+        ("googleapiclient", *optional_module("googleapiclient")),
+        ("google_auth_oauthlib", *optional_module("google_auth_oauthlib")),
+        ("google.oauth2", *optional_module("google.oauth2")),
+    ]
+    print("YouTube upload dependency check")
+    for name, ok, detail in checks:
+        mark = "OK" if ok else "MISSING"
+        print(f"  {mark:7} {name:24} {detail}")
+    print("\nRequired OAuth scope for video upload:")
+    print("  https://www.googleapis.com/auth/youtube.upload")
+    print("Caption upload additionally needs:")
+    print("  https://www.googleapis.com/auth/youtube.force-ssl")
+    return 0 if all(ok for _, ok, _ in checks) else 1
+
+
+def parse_publish_metadata(metadata_path: Path) -> dict[str, Any]:
+    text = read_text(metadata_path)
+    title = ""
+    description_lines: list[str] = []
+    tags: list[str] = []
+    section = ""
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if line.startswith("## "):
+            section = line[3:].strip().lower()
+            continue
+        if section == "title candidates" and not title:
+            match = re.match(r"\d+\.\s*(.+)", line)
+            if match:
+                title = match.group(1).strip()
+        elif section == "description draft":
+            if line and not line.startswith("#"):
+                description_lines.append(raw_line.rstrip())
+        elif section == "tags" and line:
+            tags.extend([tag.strip() for tag in line.split(",") if tag.strip()])
+    return {
+        "title": title,
+        "description": "\n".join(description_lines).strip(),
+        "tags": tags,
+    }
+
+
+def default_youtube_token_file() -> Path:
+    return Path.home() / ".opencodex" / "youtube_upload_token.json"
+
+
+def youtube_scopes(upload_captions: bool) -> list[str]:
+    scopes = ["https://www.googleapis.com/auth/youtube.upload"]
+    if upload_captions:
+        scopes.append("https://www.googleapis.com/auth/youtube.force-ssl")
+    return scopes
+
+
+def bool_from_choice(value: str | None, *, field: str, required: bool) -> bool | None:
+    if value is None:
+        if required:
+            raise AgentError(f"{field} must be explicitly set to yes or no before upload.")
+        return None
+    return value == "yes"
+
+
+def select_caption_file(artifacts: dict[str, Any]) -> Path | None:
+    subtitles: list[Path] = artifacts.get("subtitles") or []
+    if not subtitles:
+        return None
+    full = [p for p in subtitles if "풀영상" in p.name or "master" in p.name]
+    return sorted(full or subtitles, key=lambda p: p.name)[0]
+
+
+def build_youtube_upload_plan(args: argparse.Namespace, out_dir: Path) -> dict[str, Any]:
+    artifacts = locate_artifacts(out_dir)
+    video = artifacts["preferred_video"]
+    if not video:
+        raise AgentError("No video found for YouTube upload.")
+
+    checks, _ = readiness_checks(out_dir)
+    not_pass = [c for c in checks if c["status"] != "pass"]
+    state = read_json(state_path(out_dir), default={}) or {}
+    if not args.force and (not_pass or state.get("status") != "ready_for_publish_decision"):
+        raise AgentError(
+            "YouTube upload requires all readiness gates to pass and state ready_for_publish_decision. "
+            "Run `continue` first or pass --force after reviewing the risk."
+        )
+
+    publish_dir = artifacts["publish_dir"]
+    metadata = parse_publish_metadata(publish_dir / "metadata.md")
+    title = args.title or metadata["title"] or artifacts["title"]
+    description = metadata["description"]
+    if args.description_file:
+        description = read_text(Path(args.description_file).expanduser().resolve()).strip()
+    tags = [tag.strip() for tag in (args.tags.split(",") if args.tags else metadata["tags"]) if tag.strip()]
+    caption_file = Path(args.caption_file).expanduser().resolve() if args.caption_file else select_caption_file(artifacts)
+
+    upload_required = bool(args.approve_upload)
+    made_for_kids = bool_from_choice(args.made_for_kids, field="--made-for-kids", required=upload_required)
+    contains_synthetic = bool_from_choice(
+        args.contains_synthetic_media,
+        field="--contains-synthetic-media",
+        required=upload_required,
+    )
+    if args.privacy_status == "public" and not args.approve_public:
+        raise AgentError("Public YouTube upload requires --approve-public.")
+    if upload_required and not args.client_secrets:
+        raise AgentError("YouTube upload requires --client-secrets pointing to a local OAuth client secrets JSON file.")
+
+    plan = {
+        "created_at": now_iso(),
+        "source_output": str(out_dir),
+        "video": str(video),
+        "title": title,
+        "description": description,
+        "tags": tags,
+        "category_id": args.category_id,
+        "privacy_status": args.privacy_status,
+        "notify_subscribers": bool(args.notify_subscribers),
+        "self_declared_made_for_kids": made_for_kids,
+        "contains_synthetic_media": contains_synthetic,
+        "caption_file": str(caption_file) if caption_file else None,
+        "upload_captions": bool(args.upload_captions),
+        "client_secrets": str(Path(args.client_secrets).expanduser().resolve()) if args.client_secrets else None,
+        "token_file": str(Path(args.token_file).expanduser().resolve() if args.token_file else default_youtube_token_file()),
+        "api_notes": [
+            "videos.insert uses YouTube Data API OAuth and resumable media upload.",
+            "caption upload is separate and uses captions.insert with a broader scope.",
+            "No upload is performed unless --approve-upload is present.",
+        ],
+    }
+    return plan
+
+
+def get_youtube_service(client_secrets: Path, token_file: Path, upload_captions: bool):
+    from google.auth.transport.requests import Request
+    from google.oauth2.credentials import Credentials
+    from google_auth_oauthlib.flow import InstalledAppFlow
+    from googleapiclient.discovery import build
+
+    scopes = youtube_scopes(upload_captions)
+    creds = None
+    if token_file.exists():
+        creds = Credentials.from_authorized_user_file(str(token_file), scopes)
+    if creds and creds.valid and not creds.has_scopes(scopes):
+        raise AgentError(f"Existing token lacks required YouTube scopes. Delete or replace: {token_file}")
+    if creds and creds.expired and creds.refresh_token:
+        creds.refresh(Request())
+    if not creds or not creds.valid:
+        flow = InstalledAppFlow.from_client_secrets_file(str(client_secrets), scopes)
+        creds = flow.run_local_server(port=0)
+    token_file.parent.mkdir(parents=True, exist_ok=True)
+    token_file.write_text(creds.to_json(), encoding="utf-8")
+    return build("youtube", "v3", credentials=creds)
+
+
+def execute_youtube_upload(plan: dict[str, Any]) -> dict[str, Any]:
+    from googleapiclient.http import MediaFileUpload
+
+    client_secrets = Path(plan["client_secrets"])
+    token_file = Path(plan["token_file"])
+    youtube = get_youtube_service(client_secrets, token_file, bool(plan["upload_captions"]))
+    body = {
+        "snippet": {
+            "title": plan["title"],
+            "description": plan["description"],
+            "tags": plan["tags"],
+            "categoryId": plan["category_id"],
+            "defaultLanguage": "ko",
+        },
+        "status": {
+            "privacyStatus": plan["privacy_status"],
+            "selfDeclaredMadeForKids": plan["self_declared_made_for_kids"],
+            "containsSyntheticMedia": plan["contains_synthetic_media"],
+        },
+    }
+    media = MediaFileUpload(plan["video"], chunksize=-1, resumable=True)
+    request = youtube.videos().insert(
+        part="snippet,status",
+        body=body,
+        media_body=media,
+        notifySubscribers=plan["notify_subscribers"],
+    )
+    response = None
+    while response is None:
+        _, response = request.next_chunk()
+    video_id = response["id"]
+    result = {
+        "created_at": now_iso(),
+        "video_id": video_id,
+        "watch_url": f"https://youtu.be/{video_id}",
+        "privacy_status": plan["privacy_status"],
+        "caption_id": None,
+    }
+
+    if plan["upload_captions"] and plan["caption_file"]:
+        caption_body = {
+            "snippet": {
+                "videoId": video_id,
+                "language": "ko",
+                "name": "Korean",
+                "isDraft": False,
+            }
+        }
+        caption_media = MediaFileUpload(plan["caption_file"], mimetype="application/octet-stream", resumable=True)
+        caption_response = youtube.captions().insert(
+            part="snippet",
+            body=caption_body,
+            media_body=caption_media,
+        ).execute()
+        result["caption_id"] = caption_response.get("id")
+    return result
+
+
+def run_youtube_upload(args: argparse.Namespace) -> int:
+    out_dir = Path(args.out_dir).expanduser().resolve()
+    if not out_dir.exists():
+        raise AgentError(f"Output directory not found: {out_dir}")
+    plan = build_youtube_upload_plan(args, out_dir)
+    publish_dir = out_dir / "publish"
+    plan_path = publish_dir / "youtube_upload_plan.json"
+    write_json(plan_path, plan)
+    print(f"YouTube upload plan: {plan_path}")
+    print(f"  video      : {plan['video']}")
+    print(f"  title      : {plan['title']}")
+    print(f"  visibility : {plan['privacy_status']}")
+    print(f"  captions   : {plan['caption_file'] if plan['upload_captions'] else 'not requested'}")
+    if args.dry_run or not args.approve_upload:
+        print("\nDry run only. Add --approve-upload to perform the external YouTube upload.")
+        return 0
+
+    result = execute_youtube_upload(plan)
+    result_path = publish_dir / "youtube_upload_result.json"
+    write_json(result_path, result)
+    update_state(
+        out_dir,
+        status="youtube_uploaded",
+        youtube_url=result["watch_url"],
+        youtube_upload_result=str(result_path),
+    )
+    print(f"\nUploaded: {result['watch_url']}")
+    return 0
+
+
 def add_common_plan_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--min-silence", type=float, default=None)
     parser.add_argument("--pad", type=float, default=None)
@@ -1295,6 +1546,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     doctor = sub.add_parser("doctor", help="check local dependencies")
     doctor.set_defaults(func=run_doctor)
+
+    youtube_doctor = sub.add_parser("youtube-doctor", help="check optional YouTube upload dependencies")
+    youtube_doctor.set_defaults(func=run_youtube_doctor)
 
     prepare = sub.add_parser("prepare", help="ingest, analyze, and propose cuts")
     prepare.add_argument("source", help="Zoom recording folder or video file")
@@ -1380,6 +1634,26 @@ def build_parser() -> argparse.ArgumentParser:
     cont.add_argument("--refresh-privacy", action="store_true")
     cont.add_argument("--refresh-package", action="store_true")
     cont.set_defaults(func=run_continue)
+
+    youtube_upload = sub.add_parser("youtube-upload", help="plan or perform an approved YouTube upload")
+    youtube_upload.add_argument("out_dir", help="existing output directory")
+    youtube_upload.add_argument("--client-secrets", type=Path, default=None)
+    youtube_upload.add_argument("--token-file", type=Path, default=None)
+    youtube_upload.add_argument("--privacy-status", choices=["private", "unlisted", "public"], default="private")
+    youtube_upload.add_argument("--approve-upload", action="store_true")
+    youtube_upload.add_argument("--approve-public", action="store_true")
+    youtube_upload.add_argument("--dry-run", action="store_true")
+    youtube_upload.add_argument("--force", action="store_true")
+    youtube_upload.add_argument("--title", default="")
+    youtube_upload.add_argument("--description-file", type=Path, default=None)
+    youtube_upload.add_argument("--tags", default="")
+    youtube_upload.add_argument("--category-id", default="27")
+    youtube_upload.add_argument("--made-for-kids", choices=["yes", "no"], default=None)
+    youtube_upload.add_argument("--contains-synthetic-media", choices=["yes", "no"], default=None)
+    youtube_upload.add_argument("--notify-subscribers", action="store_true")
+    youtube_upload.add_argument("--upload-captions", action="store_true")
+    youtube_upload.add_argument("--caption-file", type=Path, default=None)
+    youtube_upload.set_defaults(func=run_youtube_upload)
 
     return parser
 

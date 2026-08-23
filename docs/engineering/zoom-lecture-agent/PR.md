@@ -7,6 +7,7 @@
 - `grill-me`, `domain-modeling`, `to-spec/to-tickets` 패턴을 에이전트의 readiness
   게이트와 다음 작업 티켓으로 적용했습니다.
 - 개인정보 검수와 게시 패키징 명령을 추가해 완성본 이후 작업까지 이어지게 했습니다.
+- YouTube 업로드 스킬과 `youtube-upload` 실행 게이트를 추가했습니다.
 - 합성 줌 녹화로 `prepare → replan → render(draft)` 흐름을 검증했습니다.
 - 편집 전후 운영을 분리하기 위해 보조 Codex 스킬 3개를 만들고 설치했습니다.
 
@@ -27,6 +28,8 @@
   - `privacy-review`: 로컬 프레임 샘플/contact sheet 및 민감 텍스트 스캔 보고서 생성
   - `package`: 업로드 메타데이터, 체크리스트, 다음 작업 티켓 생성
   - `continue`: 누락된 로컬 후속 작업을 자동 실행하고 사람 승인 게이트에서 정지
+  - `youtube-doctor`: YouTube 업로드용 선택 의존성 및 OAuth scope 점검
+  - `youtube-upload`: 업로드 계획 생성, 명시 승인 후 YouTube Data API 업로드
 
 ### Documentation
 
@@ -45,6 +48,9 @@
   - 학생 정보, 참가자 패널, 알림, 브라우저 탭 등 게시 전 노출 검수
 - `skills/misc/lecture-publish-packager/SKILL.md`
   - 마스터 영상, 자막, 대본, 챕터, 업로드 체크리스트 패키징
+- `skills/misc/lecture-youtube-uploader/SKILL.md`
+  - 승인된 게시 패키지를 YouTube로 업로드하되 OAuth, 공개 범위, 아동 대상 여부,
+    합성 콘텐츠 여부, 실제 업로드 승인을 분리
 
 로컬 Codex에는 동일한 스킬을 `C:\Users\이혜경교육대초등영어교육\.codex\skills` 아래에도 설치해 검증했습니다.
 
@@ -63,6 +69,7 @@ python .\skills\misc\zoom-recording-autopilot\scripts\agent.py privacy-review "<
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py package "<합성 줌 녹화 폴더>\_lve_output" --target youtube
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py readiness "<합성 줌 녹화 폴더>\_lve_output"
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py continue "<합성 줌 녹화 폴더>\_lve_output" --target youtube
+python .\skills\misc\zoom-recording-autopilot\scripts\agent.py youtube-upload "<실제 출력 폴더>" --dry-run --privacy-status private
 python "<skill-creator>\scripts\quick_validate.py" "<각 후보 스킬 폴더>"
 ```
 
@@ -74,6 +81,7 @@ python "<skill-creator>\scripts\quick_validate.py" "<각 후보 스킬 폴더>"
 - 확인 필요 컷 승인 후 42초 draft 마스터 렌더 성공
 - 개인정보 검수 보고서, contact sheet, 게시 메타데이터, 체크리스트 생성 성공
 - `continue`가 기존 산출물을 재사용하고 readiness를 갱신한 뒤 승인 게이트에서 정지함
+- `youtube-upload --dry-run`이 실제 업로드 없이 `publish/youtube_upload_plan.json` 생성
 - readiness 게이트가 완성본, 개인정보 검수, 게시 패키지를 인식하고,
   개인정보 검수는 `CLEAR_FOR_PUBLISH: yes` 전까지 review 상태로 유지함
 - 후보 스킬 3개 모두 `quick_validate.py` 통과

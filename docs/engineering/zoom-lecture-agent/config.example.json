@@ -18,6 +18,8 @@
     "youtube_user_id": "<YouTube account label>",
     "channel_id": "UC...",
     "channel_title": "<Channel title>",
-    "channel_handle": "@<handle>"
+    "channel_handle": "@<handle>",
+    "chunk_size_mb": 64,
+    "max_upload_retries": 10
   }
 }

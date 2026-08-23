@@ -20,6 +20,10 @@ and a passed privacy/readiness gate.
   the configured lock.
 - Keep OAuth files local. Never commit or print `client_secrets.json`, access tokens,
   or refresh tokens.
+- Prefer the official YouTube Data API and Google API Python client for private
+  lecture uploads. Do not install or run third-party uploader CLIs for the user's
+  local lecture videos unless the user explicitly approves that tool and its
+  credential storage model.
 - Use `private` as the safest visibility unless the user explicitly chooses
   `unlisted` or `public`. Public upload requires a separate explicit confirmation.
 - Do not claim that a video is public if the YouTube API project is unaudited:
@@ -39,6 +43,10 @@ and a passed privacy/readiness gate.
 - `videos.insert` supports setting `status.privacyStatus`,
   `status.selfDeclaredMadeForKids`, and `status.containsSyntheticMedia`.
 - Resumable uploads are preferred for large lecture files.
+- Use chunked `MediaFileUpload` for lecture videos and retry transient upload
+  failures with exponential backoff. Retry only transport errors and retriable
+  HTTP statuses; do not retry authorization, quota, validation, or privacy-gate
+  failures as if they were network errors.
 
 Official references:
 
@@ -46,6 +54,7 @@ Official references:
 - https://developers.google.com/youtube/v3/docs/videos/insert
 - https://developers.google.com/youtube/v3/docs/captions/insert
 - https://developers.google.com/youtube/v3/guides/using_resumable_upload_protocol
+- https://googleapis.github.io/google-api-python-client/docs/media.html
 
 ## Workflow
 
@@ -88,6 +97,7 @@ Official references:
      --privacy-status unlisted `
      --made-for-kids no `
      --contains-synthetic-media no `
+     --chunk-size-mb 64 `
      --approve-upload
    ```
 
@@ -116,3 +126,5 @@ Official references:
   the configured channel lock.
 - Stop before public upload if `--approve-public` is missing.
 - Stop after writing `publish/youtube_upload_plan.json` when approval is absent.
+- Stop and surface the API error when upload failure is authorization, quota,
+  validation, or policy-related rather than a retriable network/server error.

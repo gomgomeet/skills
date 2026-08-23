@@ -11,6 +11,7 @@ import argparse
 import importlib.util
 import json
 import os
+import random
 import re
 import shutil
 import subprocess
@@ -73,6 +74,9 @@ SENSITIVE_TEXT_PATTERNS = [
     ("meeting_id", re.compile(r"(?:meeting\s*id|회의\s*id|회의\s*번호|암호|passcode)", re.I)),
     ("student_record", re.compile(r"(?:학번|출석|성적|점수|참가자|채팅|학생\s*이름|명단)")),
 ]
+DEFAULT_UPLOAD_CHUNK_SIZE_MB = 64
+DEFAULT_UPLOAD_MAX_RETRIES = 10
+RETRIABLE_UPLOAD_STATUS_CODES = {500, 502, 503, 504}
 
 
 class AgentError(RuntimeError):
@@ -1301,6 +1305,9 @@ def run_youtube_doctor(args: argparse.Namespace) -> int:
     print("  https://www.googleapis.com/auth/youtube.readonly")
     print("Caption upload additionally needs:")
     print("  https://www.googleapis.com/auth/youtube.force-ssl")
+    print("\nUpload reliability:")
+    print(f"  default chunk size: {DEFAULT_UPLOAD_CHUNK_SIZE_MB} MB")
+    print(f"  max retry attempts: {DEFAULT_UPLOAD_MAX_RETRIES}")
     return 0 if all(ok for _, ok, _ in checks) else 1
 
 
@@ -1470,6 +1477,10 @@ def build_youtube_upload_plan(args: argparse.Namespace, out_dir: Path) -> dict[s
         raise AgentError("Public YouTube upload requires --approve-public.")
     if upload_required and not args.client_secrets:
         raise AgentError("YouTube upload requires --client-secrets pointing to a local OAuth client secrets JSON file.")
+    if args.chunk_size_mb < 1:
+        raise AgentError("--chunk-size-mb must be 1 or greater.")
+    if args.max_upload_retries < 0:
+        raise AgentError("--max-upload-retries must be 0 or greater.")
     channel_lock_file = resolve_channel_lock_file(args.channel_lock_file)
     channel_lock = read_youtube_channel_lock(channel_lock_file)
     if upload_required and not channel_lock.get("channel_id"):
@@ -1496,8 +1507,11 @@ def build_youtube_upload_plan(args: argparse.Namespace, out_dir: Path) -> dict[s
         "token_file": str(Path(args.token_file).expanduser().resolve() if args.token_file else default_youtube_token_file()),
         "channel_lock_file": str(channel_lock_file),
         "channel_lock": channel_lock or None,
+        "chunk_size_mb": int(args.chunk_size_mb),
+        "max_upload_retries": int(args.max_upload_retries),
         "api_notes": [
             "videos.insert uses YouTube Data API OAuth and resumable media upload.",
+            "Uploads use chunked MediaFileUpload and retry retriable upload failures with exponential backoff.",
             "caption upload is separate and uses captions.insert with a broader scope.",
             "No upload is performed unless --approve-upload is present.",
             "Approved uploads are blocked unless the authenticated YouTube channel ID matches the channel lock.",
@@ -1556,11 +1570,61 @@ def verify_youtube_channel_lock(youtube: Any, lock: dict[str, Any]) -> dict[str,
     return active_channel
 
 
+def resumable_upload_with_retries(request: Any, *, label: str, max_retries: int) -> dict[str, Any]:
+    from googleapiclient.errors import HttpError
+
+    try:
+        import httplib2
+
+        httplib2.RETRIES = 1
+        retriable_exceptions: tuple[type[BaseException], ...] = (httplib2.HttpLib2Error, OSError)
+    except Exception:
+        retriable_exceptions = (OSError,)
+
+    response = None
+    retry = 0
+    last_progress = -1
+    while response is None:
+        error: str | None = None
+        try:
+            status, response = request.next_chunk()
+            retry = 0
+            if status:
+                progress = int(status.progress() * 100)
+                if progress != last_progress:
+                    print(f"  {label} progress: {progress}%")
+                    last_progress = progress
+        except HttpError as exc:
+            status_code = getattr(exc.resp, "status", None)
+            if status_code in RETRIABLE_UPLOAD_STATUS_CODES:
+                error = f"retriable HTTP {status_code}"
+            else:
+                raise
+        except retriable_exceptions as exc:
+            error = f"retriable transport error: {exc}"
+
+        if error is None:
+            continue
+
+        retry += 1
+        if retry > max_retries:
+            raise AgentError(f"{label} failed after {max_retries} retry attempt(s): {error}") from None
+        sleep_seconds = min(60.0, random.random() * (2**retry))
+        print(f"  {label} retry {retry}/{max_retries} after {sleep_seconds:.1f}s ({error})")
+        time.sleep(sleep_seconds)
+
+    if not isinstance(response, dict):
+        raise AgentError(f"{label} failed with unexpected response: {response}")
+    return response
+
+
 def execute_youtube_upload(plan: dict[str, Any]) -> dict[str, Any]:
     from googleapiclient.http import MediaFileUpload
 
     client_secrets = Path(plan["client_secrets"])
     token_file = Path(plan["token_file"])
+    chunk_size = int(plan.get("chunk_size_mb") or DEFAULT_UPLOAD_CHUNK_SIZE_MB) * 1024 * 1024
+    max_retries = int(plan.get("max_upload_retries") or DEFAULT_UPLOAD_MAX_RETRIES)
     youtube = get_youtube_service(client_secrets, token_file, bool(plan["upload_captions"]))
     active_channel = verify_youtube_channel_lock(youtube, plan.get("channel_lock") or {})
     body = {
@@ -1577,17 +1641,17 @@ def execute_youtube_upload(plan: dict[str, Any]) -> dict[str, Any]:
             "containsSyntheticMedia": plan["contains_synthetic_media"],
         },
     }
-    media = MediaFileUpload(plan["video"], chunksize=-1, resumable=True)
+    media = MediaFileUpload(plan["video"], chunksize=chunk_size, resumable=True)
     request = youtube.videos().insert(
         part="snippet,status",
         body=body,
         media_body=media,
         notifySubscribers=plan["notify_subscribers"],
     )
-    response = None
-    while response is None:
-        _, response = request.next_chunk()
-    video_id = response["id"]
+    response = resumable_upload_with_retries(request, label="video upload", max_retries=max_retries)
+    video_id = response.get("id")
+    if not video_id:
+        raise AgentError(f"video upload completed without a video id: {response}")
     result = {
         "created_at": now_iso(),
         "video_id": video_id,
@@ -1606,12 +1670,22 @@ def execute_youtube_upload(plan: dict[str, Any]) -> dict[str, Any]:
                 "isDraft": False,
             }
         }
-        caption_media = MediaFileUpload(plan["caption_file"], mimetype="application/octet-stream", resumable=True)
-        caption_response = youtube.captions().insert(
+        caption_media = MediaFileUpload(
+            plan["caption_file"],
+            mimetype="application/octet-stream",
+            chunksize=chunk_size,
+            resumable=True,
+        )
+        caption_request = youtube.captions().insert(
             part="snippet",
             body=caption_body,
             media_body=caption_media,
-        ).execute()
+        )
+        caption_response = resumable_upload_with_retries(
+            caption_request,
+            label="caption upload",
+            max_retries=max_retries,
+        )
         result["caption_id"] = caption_response.get("id")
     return result
 
@@ -1632,6 +1706,7 @@ def run_youtube_upload(args: argparse.Namespace) -> int:
     lock = plan.get("channel_lock") or {}
     print(f"  channel id : {lock.get('channel_id') or 'not locked'}")
     print(f"  user id    : {lock.get('youtube_user_id') or 'not set'}")
+    print(f"  chunk size : {plan['chunk_size_mb']} MB")
     if args.dry_run or not args.approve_upload:
         print("\nDry run only. Add --approve-upload to perform the external YouTube upload.")
         return 0
@@ -1784,6 +1859,8 @@ def build_parser() -> argparse.ArgumentParser:
     youtube_upload.add_argument("--notify-subscribers", action="store_true")
     youtube_upload.add_argument("--upload-captions", action="store_true")
     youtube_upload.add_argument("--caption-file", type=Path, default=None)
+    youtube_upload.add_argument("--chunk-size-mb", type=int, default=DEFAULT_UPLOAD_CHUNK_SIZE_MB)
+    youtube_upload.add_argument("--max-upload-retries", type=int, default=DEFAULT_UPLOAD_MAX_RETRIES)
     youtube_upload.set_defaults(func=run_youtube_upload)
 
     return parser

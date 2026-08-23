@@ -10,6 +10,9 @@
 - YouTube 업로드 스킬과 `youtube-upload` 실행 게이트를 추가했습니다.
 - YouTube 사용자 표시값과 채널 ID를 로컬 잠금 파일로 고정하고, 실제 업로드 전
   OAuth로 인증된 채널 ID가 다르면 업로드를 중단하게 했습니다.
+- 인터넷으로 YouTube 업로드 도구와 공식 샘플을 조사한 뒤, 외부 CLI 설치 대신
+  공식 Google API Python client의 chunked resumable upload와 지수 백오프 재시도를
+  에이전트에 도입했습니다.
 - 합성 줌 녹화로 `prepare → replan → render(draft)` 흐름을 검증했습니다.
 - 편집 전후 운영을 분리하기 위해 보조 Codex 스킬 3개를 만들고 설치했습니다.
 
@@ -32,7 +35,7 @@
   - `continue`: 누락된 로컬 후속 작업을 자동 실행하고 사람 승인 게이트에서 정지
   - `youtube-doctor`: YouTube 업로드용 선택 의존성 및 OAuth scope 점검
   - `youtube-channel-lock`: YouTube 사용자 표시값과 고정 채널 ID 저장
-  - `youtube-upload`: 업로드 계획 생성, 고정 채널 검증, 명시 승인 후 YouTube Data API 업로드
+  - `youtube-upload`: 업로드 계획 생성, 고정 채널 검증, 명시 승인 후 chunked resumable 업로드
 
 ### Documentation
 
@@ -73,7 +76,7 @@ python .\skills\misc\zoom-recording-autopilot\scripts\agent.py package "<합성 
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py readiness "<합성 줌 녹화 폴더>\_lve_output"
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py continue "<합성 줌 녹화 폴더>\_lve_output" --target youtube
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py youtube-channel-lock --channel-lock-file ".\zoom_lecture_agent_test\youtube_channel_lock.json" --channel-id "UC0000000000000000000000" --youtube-user-id "test@example.com"
-python .\skills\misc\zoom-recording-autopilot\scripts\agent.py youtube-upload "<실제 출력 폴더>" --dry-run --privacy-status private
+python .\skills\misc\zoom-recording-autopilot\scripts\agent.py youtube-upload "<실제 출력 폴더>" --dry-run --privacy-status private --chunk-size-mb 64 --max-upload-retries 10
 python "<skill-creator>\scripts\quick_validate.py" "<각 후보 스킬 폴더>"
 ```
 
@@ -87,6 +90,7 @@ python "<skill-creator>\scripts\quick_validate.py" "<각 후보 스킬 폴더>"
 - `continue`가 기존 산출물을 재사용하고 readiness를 갱신한 뒤 승인 게이트에서 정지함
 - `youtube-upload --dry-run`이 실제 업로드 없이 `publish/youtube_upload_plan.json` 생성
 - `youtube-channel-lock`이 로컬 잠금 파일을 만들고 업로드 계획에 고정 채널 정보를 포함함
+- `youtube-upload --dry-run` 계획에 chunk size와 max retry 설정이 포함됨
 - readiness 게이트가 완성본, 개인정보 검수, 게시 패키지를 인식하고,
   개인정보 검수는 `CLEAR_FOR_PUBLISH: yes` 전까지 review 상태로 유지함
 - 후보 스킬 3개 모두 `quick_validate.py` 통과

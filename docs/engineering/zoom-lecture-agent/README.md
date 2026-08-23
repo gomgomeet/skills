@@ -111,6 +111,8 @@ python .\skills\misc\zoom-recording-autopilot\scripts\agent.py youtube-upload "<
   --privacy-status unlisted `
   --made-for-kids no `
   --contains-synthetic-media no `
+  --chunk-size-mb 64 `
+  --max-upload-retries 10 `
   --approve-upload
 ```
 
@@ -140,6 +142,8 @@ youtube-upload --approve-upload
 - 각 단계의 stdout/stderr는 `_lve_output/logs/*.json`에 남는다.
 - 개인정보 검수와 게시 패키징은 로컬 파일만 만들며 업로드는 수행하지 않는다.
 - YouTube 업로드는 `--approve-upload`, OAuth 설정, 고정 채널 일치 없이는 실행하지 않는다.
+- YouTube 업로드는 기본 64MB 청크와 지수 백오프 재시도로 긴 강의 파일의
+  일시적 네트워크 실패를 복구한다.
 
 ## 적용된 보조 스킬
 

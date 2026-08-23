@@ -8,13 +8,15 @@
   게이트와 다음 작업 티켓으로 적용했습니다.
 - 개인정보 검수와 게시 패키징 명령을 추가해 완성본 이후 작업까지 이어지게 했습니다.
 - YouTube 업로드 스킬과 `youtube-upload` 실행 게이트를 추가했습니다.
+- 전체 영상 검토 직후 후킹 제목 후보를 만드는 `lecture-title-hook-writer`와
+  `hook-title` 단계를 추가했습니다.
 - YouTube 사용자 표시값과 채널 ID를 로컬 잠금 파일로 고정하고, 실제 업로드 전
   OAuth로 인증된 채널 ID가 다르면 업로드를 중단하게 했습니다.
 - 인터넷으로 YouTube 업로드 도구와 공식 샘플을 조사한 뒤, 외부 CLI 설치 대신
   공식 Google API Python client의 chunked resumable upload와 지수 백오프 재시도를
   에이전트에 도입했습니다.
 - 합성 줌 녹화로 `prepare → replan → render(draft)` 흐름을 검증했습니다.
-- 편집 전후 운영을 분리하기 위해 보조 Codex 스킬 3개를 만들고 설치했습니다.
+- 편집 전후 운영을 분리하기 위해 보조 Codex 스킬 4개를 만들고 설치했습니다.
 
 ## Changes
 
@@ -36,6 +38,7 @@
   - `youtube-doctor`: YouTube 업로드용 선택 의존성 및 OAuth scope 점검
   - `youtube-channel-lock`: YouTube 사용자 표시값과 고정 채널 ID 저장
   - `youtube-upload`: 업로드 계획 생성, 고정 채널 검증, 명시 승인 후 chunked resumable 업로드
+  - `hook-title`: 개인정보/전체검토 직후 `publish/title_hooks.md` 생성, 패키징 메타데이터 제목 후보로 연결
 
 ### Documentation
 
@@ -57,6 +60,8 @@
 - `skills/misc/lecture-youtube-uploader/SKILL.md`
   - 승인된 게시 패키지를 YouTube로 업로드하되 OAuth, 공개 범위, 아동 대상 여부,
     합성 콘텐츠 여부, 실제 업로드 승인, 고정 채널 검증을 분리
+- `skills/misc/lecture-title-hook-writer/SKILL.md`
+  - 전체 영상 검토 직후 후킹 있는 제목 후보와 화면용 2줄 제목 배치를 생성
 
 로컬 Codex에는 동일한 스킬을 `C:\Users\이혜경교육대초등영어교육\.codex\skills` 아래에도 설치해 검증했습니다.
 
@@ -93,7 +98,7 @@ python "<skill-creator>\scripts\quick_validate.py" "<각 후보 스킬 폴더>"
 - `youtube-upload --dry-run` 계획에 chunk size와 max retry 설정이 포함됨
 - readiness 게이트가 완성본, 개인정보 검수, 게시 패키지를 인식하고,
   개인정보 검수는 `CLEAR_FOR_PUBLISH: yes` 전까지 review 상태로 유지함
-- 후보 스킬 3개 모두 `quick_validate.py` 통과
+- 후보 스킬 4개 모두 `quick_validate.py` 통과
 
 ## Notes
 

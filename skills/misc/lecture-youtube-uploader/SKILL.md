@@ -88,12 +88,23 @@ Official references:
    python .\scripts\agent.py youtube-upload "<output folder>" --dry-run --privacy-status private
    ```
 
+   If the publishing strategy is to upload finished segment videos instead of
+   the full lecture, require `--video-file` with the exact MP4 under the output
+   folder. This prevents the default full/master video selection:
+
+   ```powershell
+   python .\scripts\agent.py youtube-upload "<output folder>" `
+     --video-file "<output folder>\parts\lecture_part1.mp4" `
+     --dry-run --privacy-status private
+   ```
+
 5. Upload only when the user has explicitly approved the upload and the YouTube
    visibility. Require OAuth client secrets from the user's own Google Cloud project:
 
    ```powershell
    python .\scripts\agent.py youtube-upload "<output folder>" `
      --client-secrets "<local client_secrets.json>" `
+     --video-file "<output folder>\parts\lecture_part1.mp4" `
      --privacy-status unlisted `
      --made-for-kids no `
      --contains-synthetic-media no `

@@ -46,6 +46,10 @@ For YouTube-style publishing, prepare:
 - SRT file path
 - thumbnail candidate frame paths
 
+If `lecture-title-hook-writer` is available, generate or read
+`publish/title_hooks.md` after the full-video review and before treating
+`metadata.md` title candidates as upload-ready.
+
 For LMS or Drive-style sharing, prepare:
 
 - stable filename using date, class, topic, and part number

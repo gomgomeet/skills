@@ -73,6 +73,7 @@ python .\skills\misc\zoom-recording-autopilot\scripts\agent.py watch "C:\Users\<
 ```powershell
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py readiness "<출력 폴더>"
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py privacy-review "<출력 폴더>"
+python .\skills\misc\zoom-recording-autopilot\scripts\agent.py hook-title "<출력 폴더>" --parts-only
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py package "<출력 폴더>" --target youtube
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py continue "<출력 폴더>" --target youtube
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py youtube-channel-lock --channel-id UC... --youtube-user-id "<YouTube 계정 표시값>"
@@ -85,15 +86,23 @@ python .\skills\misc\zoom-recording-autopilot\scripts\agent.py youtube-upload "<
   Zoom 링크, 명단 관련 키워드를 찾아 `review/privacy_review.md`를 만든다.
   contact sheet를 사람이 확인한 뒤 공개 가능하면 보고서의 `CLEAR_FOR_PUBLISH: no`를
   `CLEAR_FOR_PUBLISH: yes`로 바꾼다.
+- `hook-title`: 전체 영상 검토가 끝난 직후 `publish/title_hooks.md`에 후킹 있는
+  한국어 제목 후보를 만든다. 조각영상 업로드 전략에서는 `--parts-only`를 써서
+  각 part별 추천 제목을 먼저 만든 뒤, 패키징 메타데이터가 그 추천 제목을 사용하게 한다.
+  업로드 제목은 한 줄로 유지하고, 썸네일/인트로 화면에서는 작은 회차 라벨과
+  두 줄 제목(`핵심 결과` / `범위 또는 경로`)로 나누어 배치한다.
 - `package`: 원본 영상을 복사하지 않고 경로를 참조한 채 `publish/metadata.md`,
   `publish/upload-checklist.md`, `publish/agent-tickets.md`를 만든다. 영상까지 복사하려면
   `--copy-media`를 명시한다.
 - `continue`: 개인정보 검수와 게시 패키지 중 빠진 작업을 자동으로 진행하고,
-  `review/readiness_report.md`를 갱신한 뒤 사람 승인 게이트에서 멈춘다.
+  제목 훅, `review/readiness_report.md`를 갱신한 뒤 사람 승인 게이트에서 멈춘다.
 - `youtube-channel-lock`: 업로드 대상 YouTube 채널 ID와 사용자 표시값을
   `%USERPROFILE%\.opencodex\youtube_channel_lock.json`에 저장한다.
 - `youtube-upload`: YouTube 업로드 계획을 만들고, OAuth client secrets,
   고정 채널 일치, `--approve-upload`가 모두 있을 때만 외부 업로드를 실행한다.
+  풀영상 대신 완성된 조각영상을 올릴 때는 `--video-file "<출력 폴더>\parts\...\part1.mp4"`처럼
+  업로드할 MP4를 명시한다. 같은 이름의 `.ko.srt`가 있으면 자막 후보로 자동 연결되며,
+  계획/결과 JSON은 영상 이름별로 분리 저장된다.
 
 실제 업로드 전 점검:
 
@@ -108,6 +117,7 @@ python .\skills\misc\zoom-recording-autopilot\scripts\agent.py youtube-upload "<
 ```powershell
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py youtube-upload "<출력 폴더>" `
   --client-secrets "<local client_secrets.json>" `
+  --video-file "<출력 폴더>\parts\part1.mp4" `
   --privacy-status unlisted `
   --made-for-kids no `
   --contains-synthetic-media no `
@@ -127,6 +137,8 @@ render --approve-cuts [--approve-script]
   -> completed
 privacy-review
   -> privacy_review_ready
+hook-title
+  -> title_hooks_ready
 package
   -> publish_package_ready
 continue
@@ -149,6 +161,8 @@ youtube-upload --approve-upload
 
 - `lecture-privacy-review`: 업로드 전 프레임 샘플과 민감 텍스트 점검을 별도 보고서로 분리
 - `lecture-publish-packager`: 자막, 챕터, 메타데이터, 체크리스트 패키징
+- `lecture-title-hook-writer`: 전체 영상 검토 직후 후킹 있는 제목 후보를 만들고
+  업로드 메타데이터의 첫 후보로 연결
 - `lecture-youtube-uploader`: 승인된 게시 패키지를 고정된 YouTube 채널로만
   업로드하되 OAuth, 공개 범위, 아동 대상 여부, 합성 콘텐츠 여부를 명시 승인으로 통제
 - `grill-me / grill-with-docs`: 게시 준비 단계에서 남은 질문과 블로커를 강하게 드러냄

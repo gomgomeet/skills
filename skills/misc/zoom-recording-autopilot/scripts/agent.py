@@ -8,6 +8,7 @@ checks, recording-folder watching, and explicit approval gates.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
 import json
 import os
@@ -49,6 +50,10 @@ APPLIED_SKILLS = [
     {
         "name": "lecture-publish-packager",
         "agent_use": "build metadata, subtitle references, and upload checklist packages",
+    },
+    {
+        "name": "lecture-title-hook-writer",
+        "agent_use": "create hook-focused Korean title candidates immediately after full-video review and before publish metadata is finalized",
     },
     {
         "name": "lecture-youtube-uploader",
@@ -135,6 +140,33 @@ def mb_from_bytes(value: str | int | None) -> float | None:
 def sorted_existing(paths: list[Path]) -> list[Path]:
     existing = [p for p in paths if p.exists()]
     return sorted(existing, key=lambda p: (p.stat().st_mtime, p.name), reverse=True)
+
+
+def part_number_from_stem(stem: str) -> int | None:
+    match = re.search(r"part\s*([0-9]+)|([0-9]+)\s*부", stem, re.I)
+    if not match:
+        return None
+    value = match.group(1) or match.group(2)
+    return int(value) if value else None
+
+
+def sorted_unique_part_videos(paths: list[Path]) -> list[Path]:
+    selected: dict[int | str, Path] = {}
+    for path in [p for p in paths if p.exists()]:
+        part_no = part_number_from_stem(path.stem)
+        key: int | str = part_no if part_no is not None else path.stem
+        existing = selected.get(key)
+        if existing is None:
+            selected[key] = path
+            continue
+        if path.parent.name.lower() == "parts" and existing.parent.name.lower() != "parts":
+            selected[key] = path
+
+    def sort_key(path: Path) -> tuple[int, str]:
+        part_no = part_number_from_stem(path.stem)
+        return (part_no if part_no is not None else 9999, path.name)
+
+    return sorted(selected.values(), key=sort_key)
 
 
 def ffprobe_format(video: Path) -> dict[str, Any]:
@@ -346,15 +378,16 @@ def locate_artifacts(out_dir: Path) -> dict[str, Any]:
     publish_dir = out_dir / "publish"
 
     full_videos = sorted_existing(list(final_dir.glob("*풀영상*.mp4")) if final_dir.exists() else [])
-    part_videos = sorted(
-        list(final_dir.glob("*part*.mp4")) if final_dir.exists() else [],
-        key=lambda p: p.name,
-    )
+    part_candidates = []
+    for folder in [final_dir, out_dir / "parts"]:
+        if folder.exists():
+            part_candidates.extend(folder.glob("*part*.mp4"))
+    part_videos = sorted_unique_part_videos(part_candidates)
     master_videos = sorted_existing(list((out_dir / "master").glob("*_master.mp4")))
     all_mp4s = sorted_existing(list(out_dir.glob("*.mp4")) + list(final_dir.glob("*.mp4")) if final_dir.exists() else list(out_dir.glob("*.mp4")))
 
     subtitle_candidates = []
-    for folder in [out_dir / "subtitles", out_dir / "subs", final_dir]:
+    for folder in [out_dir / "subtitles", out_dir / "subs", final_dir, out_dir / "parts"]:
         if folder.exists():
             subtitle_candidates.extend(folder.glob("*.srt"))
     subtitles = sorted(subtitle_candidates, key=lambda p: p.name)
@@ -373,6 +406,7 @@ def locate_artifacts(out_dir: Path) -> dict[str, Any]:
             transcript_candidates.append(candidate)
 
     privacy_review = review_dir / "privacy_review.md"
+    title_hooks = publish_dir / "title_hooks.md"
     readiness_report = review_dir / "readiness_report.md"
     existing_review_sheets = sorted(review_dir.glob("*.png"), key=lambda p: p.name) if review_dir.exists() else []
     render_logs = sorted_existing(
@@ -396,6 +430,7 @@ def locate_artifacts(out_dir: Path) -> dict[str, Any]:
         "review_dir": review_dir,
         "publish_dir": publish_dir,
         "privacy_review": privacy_review if privacy_review.exists() else None,
+        "title_hooks": title_hooks if title_hooks.exists() else None,
         "readiness_report": readiness_report if readiness_report.exists() else None,
         "review_sheets": existing_review_sheets,
         "render_logs": render_logs,
@@ -882,6 +917,11 @@ def readiness_checks(out_dir: Path) -> tuple[list[dict[str, str]], dict[str, Any
     else:
         add("review", "chapters", "no chapter file found")
 
+    if artifacts["title_hooks"]:
+        add("pass", "title hooks", str(artifacts["title_hooks"]))
+    else:
+        add("review", "title hooks", "run hook-title after full-video review and before upload metadata approval")
+
     if artifacts["privacy_review"]:
         privacy_text = read_text(artifacts["privacy_review"])
         if re.search(r"clear_for_publish\s*:\s*(yes|true)", privacy_text, re.I):
@@ -1058,6 +1098,266 @@ def run_privacy_review(args: argparse.Namespace) -> int:
     return 0
 
 
+def detect_part_number(path: Path) -> int | None:
+    return part_number_from_stem(path.stem)
+
+
+def find_chapter_file_for_video(video: Path, chapters: list[Path]) -> Path | None:
+    if not chapters:
+        return None
+    part_no = detect_part_number(video)
+    if part_no is not None:
+        token = f"part{part_no}"
+        matches = [p for p in chapters if token in p.stem.lower() or f"{part_no}부" in p.stem]
+        if matches:
+            return sorted(matches, key=lambda p: len(p.name))[0]
+    if "풀영상" in video.stem or "full" in video.stem.lower():
+        matches = [p for p in chapters if "풀영상" in p.stem or "full" in p.stem.lower()]
+        if matches:
+            return sorted(matches, key=lambda p: len(p.name))[0]
+    return sorted(chapters, key=lambda p: p.name)[0]
+
+
+def chapter_topics(chapter_file: Path | None) -> list[str]:
+    if not chapter_file or not chapter_file.exists():
+        return []
+    topics: list[str] = []
+    for raw_line in read_text(chapter_file).splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        line = re.sub(r"^\d{1,2}:\d{2}(?::\d{2})?\s+", "", line).strip()
+        if line:
+            topics.append(line)
+    return topics
+
+
+def infer_lecture_level(text: str) -> str:
+    lowered = text.lower()
+    if "왕초보" in text:
+        return "왕초보"
+    if "초보" in text or "입문" in text or "basic" in lowered:
+        return "입문"
+    if "심화" in text or "advanced" in lowered:
+        return "심화"
+    return "강의"
+
+
+def infer_platform_name(text: str) -> str:
+    lowered = text.lower()
+    if "노션" in text or "notion" in lowered:
+        return "노션"
+    if "캔바" in text or "canva" in lowered:
+        return "캔바"
+    if "줌" in text or "zoom" in lowered:
+        return "줌"
+    return "수업"
+
+
+def hook_recommended_title(platform: str, level: str, part_no: int | None, topics: list[str], fallback: str) -> str:
+    topic_text = " ".join(topics)
+    suffix = f" [{platform} {level} {part_no}부]" if part_no else ""
+    if platform == "노션":
+        if any(keyword in topic_text for keyword in ["보기(View)", "캘린더", "보드", "갤러리", "리스트 보기"]):
+            return f"노션 보기(View) 바꾸기｜캘린더·보드·갤러리로 정리 끝내기{suffix}"
+        if any(keyword in topic_text for keyword in ["블록", "콜아웃", "수업일지"]):
+            return f"노션 첫 페이지 만들기｜블록부터 수업일지까지{suffix}"
+        if any(keyword in topic_text for keyword in ["자료", "유튜브", "임베드", "데이터베이스", "속성"]):
+            return f"노션에 자료 넣고 데이터베이스 만들기｜임베드부터 속성까지{suffix}"
+        if level == "왕초보":
+            return "노션 왕초보가 처음 만드는 흐름｜블록부터 데이터베이스까지"
+
+    if topics:
+        first = topics[0].split(" - ")[0]
+        last = topics[-1].split(" - ")[0]
+        if part_no:
+            return f"{platform} {first}부터 {last}까지 [{level} {part_no}부]"
+        return f"{platform} {first}부터 {last}까지 한 번에"
+    return fallback
+
+
+def hook_alternatives(platform: str, level: str, part_no: int | None, topics: list[str], recommended: str) -> list[str]:
+    suffix = f" [{platform} {level} {part_no}부]" if part_no else ""
+    topic_text = " ".join(topics)
+    candidates = [recommended]
+    if platform == "노션":
+        if "수업일지" in topic_text:
+            candidates += [
+                f"노션 문서의 기본기｜목록·콜아웃·수업일지 페이지 만들기{suffix}",
+                f"처음 켠 노션에서 여기까지｜블록으로 수업일지 틀 잡기{suffix}",
+            ]
+        if "데이터베이스" in topic_text:
+            candidates += [
+                f"노션 데이터베이스 첫걸음｜자료 넣기부터 속성 정리까지{suffix}",
+                f"유튜브·이미지·파일을 노션에 넣고 DB로 정리하기{suffix}",
+            ]
+        if any(keyword in topic_text for keyword in ["보기(View)", "캘린더", "보드", "갤러리", "리스트 보기"]):
+            candidates += [
+                f"노션 데이터베이스가 쉬워지는 순간｜보기(View)만 바꾸면 됩니다{suffix}",
+                f"같은 자료를 다르게 보는 법｜캘린더·보드·리스트·갤러리{suffix}",
+            ]
+    if topics:
+        part_suffix = f" [{part_no}부]" if part_no else ""
+        candidates += [
+            f"{platform} {level}, {topics[0]}부터 시작하기{part_suffix}",
+            f"{topics[-1]}까지 따라 하는 {platform} {level} 수업{part_suffix}",
+        ]
+
+    unique: list[str] = []
+    for candidate in candidates:
+        if candidate and candidate not in unique:
+            unique.append(candidate)
+    return unique[:8]
+
+
+def screen_layout_for_title(
+    upload_title: str,
+    *,
+    platform: str,
+    level: str,
+    part_no: int | None,
+    topics: list[str],
+) -> dict[str, str]:
+    label = f"{platform} {level} {part_no}부" if part_no else f"{platform} {level}".strip()
+    core = upload_title
+    suffix_match = re.search(r"\s*\[([^\]]+)\]\s*$", upload_title)
+    if suffix_match:
+        label = suffix_match.group(1).strip()
+        core = upload_title[: suffix_match.start()].strip()
+
+    if "｜" in core:
+        line1, line2 = [part.strip() for part in core.split("｜", 1)]
+    else:
+        line1, line2 = core, ""
+
+    topic_text = " ".join(topics)
+    if platform == "노션" and any(keyword in topic_text for keyword in ["보기(View)", "캘린더", "보드", "갤러리"]):
+        thumbnail = "보기만 바꾸면 됩니다"
+    elif platform == "노션" and "수업일지" in topic_text:
+        thumbnail = "처음 켜도 여기까지 됩니다"
+    elif platform == "노션" and any(keyword in topic_text for keyword in ["자료", "임베드", "데이터베이스", "속성"]):
+        thumbnail = "자료 정리가 쉬워집니다"
+    else:
+        thumbnail = line2 or line1
+
+    return {
+        "label": label,
+        "line1": line1,
+        "line2": line2,
+        "thumbnail": thumbnail,
+    }
+
+
+def build_title_hook_markdown(out_dir: Path, artifacts: dict[str, Any], videos: list[Path]) -> str:
+    source_text = " ".join([artifacts["title"], out_dir.name] + [p.name for p in artifacts["chapters"]])
+    platform = infer_platform_name(source_text)
+    level = infer_lecture_level(source_text)
+    privacy_status = "not generated"
+    if artifacts["privacy_review"]:
+        privacy_text = read_text(artifacts["privacy_review"])
+        privacy_status = "clear" if re.search(r"clear_for_publish\s*:\s*(yes|true)", privacy_text, re.I) else "review needed"
+
+    lines = [
+        f"# Title Hooks - {artifacts['title']}",
+        "",
+        f"- Generated: {now_iso()}",
+        f"- Source folder: `{out_dir}`",
+        f"- Full-review signal: privacy review {privacy_status}",
+        "- Rule: create these after the whole edited video, transcript, chapters, or review package has been inspected.",
+        "",
+    ]
+
+    for video in videos:
+        chapter_file = find_chapter_file_for_video(video, artifacts["chapters"])
+        topics = chapter_topics(chapter_file)
+        part_no = detect_part_number(video)
+        recommended = hook_recommended_title(platform, level, part_no, topics, artifacts["title"])
+        alternatives = hook_alternatives(platform, level, part_no, topics, recommended)
+        layout = screen_layout_for_title(
+            recommended,
+            platform=platform,
+            level=level,
+            part_no=part_no,
+            topics=topics,
+        )
+        label = f"Part {part_no}" if part_no else ("Full Video" if "풀영상" in video.stem else video.stem)
+        lines += [
+            f"## {label}",
+            "",
+            f"- Video: `{video}`",
+            f"- Chapter source: `{chapter_file}`" if chapter_file else "- Chapter source: not found",
+            f"- Recommended: {recommended}",
+            f"- Rationale: {level} 시청자가 영상에서 바로 얻는 결과를 제목 앞부분에 두고, 실제 챕터 흐름을 벗어나지 않게 잡았습니다.",
+            "",
+            "### Screen Layout",
+            "",
+            f"- Small label: {layout['label']}",
+            f"- Line 1: {layout['line1']}",
+            f"- Line 2: {layout['line2']}",
+            f"- Thumbnail phrase: {layout['thumbnail']}",
+            "",
+            "### Alternatives",
+            "",
+        ]
+        for idx, candidate in enumerate(alternatives, start=1):
+            lines.append(f"{idx}. {candidate}")
+        lines += [
+            "",
+            "### Follow-up Checks",
+            "",
+            "- 업로드 제목은 한 줄로 유지하고, 화면/썸네일/인트로 카드에서는 위 2줄 배치를 사용한다.",
+            "- 작은 라벨의 회차 정보가 큰 제목보다 시각적으로 작게 보이도록 배치한다.",
+            "- 썸네일 문구가 추천 제목과 같은 약속을 하도록 맞춘다.",
+            "- 재생목록/다음 편 링크가 설명란에 들어가는지 확인한다.",
+            "- 제목이 실제 영상 범위를 넘겨 약속하지 않는지 최종 확인한다.",
+            "",
+        ]
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def parse_title_hook_recommendations(title_hooks: Path) -> list[str]:
+    if not title_hooks.exists():
+        return []
+    titles: list[str] = []
+    for line in read_text(title_hooks).splitlines():
+        match = re.match(r"-\s*Recommended:\s*(.+)", line.strip())
+        if match:
+            titles.append(match.group(1).strip())
+    return titles
+
+
+def run_hook_title(args: argparse.Namespace) -> int:
+    out_dir = Path(args.out_dir).expanduser().resolve()
+    if not out_dir.exists():
+        raise AgentError(f"Output directory not found: {out_dir}")
+    artifacts = locate_artifacts(out_dir)
+    if not artifacts["privacy_review"]:
+        raise AgentError("Create or refresh privacy-review before hook-title so titles are based on full-video review context.")
+
+    if args.video_file:
+        videos = [validate_upload_video(out_dir, args.video_file)]
+    elif args.parts_only and artifacts["part_videos"]:
+        videos = artifacts["part_videos"]
+    else:
+        videos = []
+        if artifacts["part_videos"]:
+            videos.extend(artifacts["part_videos"])
+        elif artifacts["preferred_video"]:
+            videos.append(artifacts["preferred_video"])
+    if not videos:
+        raise AgentError("No video found for hook title generation.")
+
+    publish_dir = Path(args.publish_dir).expanduser().resolve() if args.publish_dir else artifacts["publish_dir"]
+    publish_dir.mkdir(parents=True, exist_ok=True)
+    output = Path(args.output).expanduser().resolve() if args.output else publish_dir / "title_hooks.md"
+    write_text(output, build_title_hook_markdown(out_dir, artifacts, videos))
+    update_state(out_dir, status="title_hooks_ready", title_hooks=str(output))
+    print(f"Title hooks: {output}")
+    for title in parse_title_hook_recommendations(output):
+        print(f"  - {title}")
+    return 0
+
+
 def copied_asset(src: Path, dest_dir: Path) -> Path:
     dest_dir.mkdir(parents=True, exist_ok=True)
     dest = dest_dir / src.name
@@ -1100,6 +1400,12 @@ def run_package(args: argparse.Namespace) -> int:
     duration = float(info.get("duration") or 0)
     size_mb = mb_from_bytes(info.get("size"))
     title = artifacts["title"]
+    hook_titles = parse_title_hook_recommendations(publish_dir / "title_hooks.md")
+    title_candidates = hook_titles or [
+        title,
+        f"{title} - 풀영상",
+        f"{title} 다시보기",
+    ]
     chapter_block = build_chapter_block(artifacts["chapters"])
     privacy_review = out_dir / "review" / "privacy_review.md"
 
@@ -1108,9 +1414,7 @@ def run_package(args: argparse.Namespace) -> int:
         "",
         "## Title Candidates",
         "",
-        f"1. {title}",
-        f"2. {title} - 풀영상",
-        f"3. {title} 다시보기",
+        *[f"{idx}. {candidate}" for idx, candidate in enumerate(title_candidates, start=1)],
         "",
         "## Description Draft",
         "",
@@ -1229,6 +1533,20 @@ def run_continue(args: argparse.Namespace) -> int:
         actions.append("privacy-review")
     else:
         actions.append("privacy-review: skipped existing report")
+
+    artifacts = locate_artifacts(out_dir)
+    if args.refresh_title or not artifacts["title_hooks"]:
+        title_args = argparse.Namespace(
+            out_dir=str(out_dir),
+            publish_dir=args.publish_dir,
+            output=None,
+            video_file=None,
+            parts_only=True,
+        )
+        run_hook_title(title_args)
+        actions.append("hook-title")
+    else:
+        actions.append("hook-title: skipped existing title hooks")
 
     artifacts = locate_artifacts(out_dir)
     checklist = artifacts["publish_dir"] / "upload-checklist.md"
@@ -1442,9 +1760,51 @@ def select_caption_file(artifacts: dict[str, Any]) -> Path | None:
     return sorted(full or subtitles, key=lambda p: p.name)[0]
 
 
+def validate_upload_video(out_dir: Path, video_file: Path) -> Path:
+    video = video_file.expanduser().resolve()
+    if not video.exists():
+        raise AgentError(f"YouTube upload video not found: {video}")
+    if video.suffix.lower() != ".mp4":
+        raise AgentError(f"YouTube upload video must be an MP4 file: {video}")
+    try:
+        video.relative_to(out_dir)
+    except ValueError as exc:
+        raise AgentError(f"YouTube upload video must be inside the output directory: {video}") from exc
+    return video
+
+
+def select_caption_for_video(video: Path, artifacts: dict[str, Any]) -> Path | None:
+    direct_candidates = [
+        video.with_suffix(".ko.srt"),
+        video.with_suffix(".srt"),
+    ]
+    stem = video.stem
+    for candidate in direct_candidates:
+        if candidate.exists():
+            return candidate
+
+    subtitles: list[Path] = artifacts.get("subtitles") or []
+    matching = [p for p in subtitles if p.stem == stem or p.stem == f"{stem}.ko"]
+    if matching:
+        return sorted(matching, key=lambda p: p.name)[0]
+    return select_caption_file(artifacts)
+
+
+def upload_artifact_suffix(video: Path | None) -> str:
+    if not video:
+        return ""
+    suffix = re.sub(r"[^A-Za-z0-9_.-]+", "_", video.stem).strip("._-")
+    digest = hashlib.sha1(video.stem.encode("utf-8")).hexdigest()[:8]
+    if not suffix:
+        return f"selected_video_{digest}"
+    if digest not in suffix:
+        return f"{suffix}_{digest}"
+    return suffix
+
+
 def build_youtube_upload_plan(args: argparse.Namespace, out_dir: Path) -> dict[str, Any]:
     artifacts = locate_artifacts(out_dir)
-    video = artifacts["preferred_video"]
+    video = validate_upload_video(out_dir, args.video_file) if args.video_file else artifacts["preferred_video"]
     if not video:
         raise AgentError("No video found for YouTube upload.")
 
@@ -1464,7 +1824,7 @@ def build_youtube_upload_plan(args: argparse.Namespace, out_dir: Path) -> dict[s
     if args.description_file:
         description = read_text(Path(args.description_file).expanduser().resolve()).strip()
     tags = [tag.strip() for tag in (args.tags.split(",") if args.tags else metadata["tags"]) if tag.strip()]
-    caption_file = Path(args.caption_file).expanduser().resolve() if args.caption_file else select_caption_file(artifacts)
+    caption_file = Path(args.caption_file).expanduser().resolve() if args.caption_file else select_caption_for_video(video, artifacts)
 
     upload_required = bool(args.approve_upload)
     made_for_kids = bool_from_choice(args.made_for_kids, field="--made-for-kids", required=upload_required)
@@ -1493,6 +1853,8 @@ def build_youtube_upload_plan(args: argparse.Namespace, out_dir: Path) -> dict[s
         "created_at": now_iso(),
         "source_output": str(out_dir),
         "video": str(video),
+        "video_scope": "selected" if args.video_file else "default",
+        "video_artifact_suffix": upload_artifact_suffix(video if args.video_file else None),
         "title": title,
         "description": description,
         "tags": tags,
@@ -1696,7 +2058,9 @@ def run_youtube_upload(args: argparse.Namespace) -> int:
         raise AgentError(f"Output directory not found: {out_dir}")
     plan = build_youtube_upload_plan(args, out_dir)
     publish_dir = out_dir / "publish"
-    plan_path = publish_dir / "youtube_upload_plan.json"
+    artifact_suffix = plan.get("video_artifact_suffix") or ""
+    suffix = f"_{artifact_suffix}" if artifact_suffix else ""
+    plan_path = publish_dir / f"youtube_upload_plan{suffix}.json"
     write_json(plan_path, plan)
     print(f"YouTube upload plan: {plan_path}")
     print(f"  video      : {plan['video']}")
@@ -1712,7 +2076,7 @@ def run_youtube_upload(args: argparse.Namespace) -> int:
         return 0
 
     result = execute_youtube_upload(plan)
-    result_path = publish_dir / "youtube_upload_result.json"
+    result_path = publish_dir / f"youtube_upload_result{suffix}.json"
     write_json(result_path, result)
     update_state(
         out_dir,
@@ -1820,6 +2184,14 @@ def build_parser() -> argparse.ArgumentParser:
     privacy.add_argument("--no-extract", action="store_true")
     privacy.set_defaults(func=run_privacy_review)
 
+    title_hook = sub.add_parser("hook-title", help="create hook-focused title candidates after full-video review")
+    title_hook.add_argument("out_dir", help="existing output directory")
+    title_hook.add_argument("--publish-dir", type=Path, default=None)
+    title_hook.add_argument("--output", type=Path, default=None)
+    title_hook.add_argument("--video-file", type=Path, default=None, help="specific MP4 inside out_dir to title")
+    title_hook.add_argument("--parts-only", action="store_true", help="title split part videos instead of the full/default video")
+    title_hook.set_defaults(func=run_hook_title)
+
     package = sub.add_parser("package", help="create local publish metadata and checklist")
     package.add_argument("out_dir", help="existing output directory")
     package.add_argument("--target", choices=["youtube", "lms", "drive"], default="youtube")
@@ -1837,6 +2209,7 @@ def build_parser() -> argparse.ArgumentParser:
     cont.add_argument("--max-frames", type=int, default=24)
     cont.add_argument("--no-extract", action="store_true")
     cont.add_argument("--refresh-privacy", action="store_true")
+    cont.add_argument("--refresh-title", action="store_true")
     cont.add_argument("--refresh-package", action="store_true")
     cont.set_defaults(func=run_continue)
 
@@ -1850,6 +2223,7 @@ def build_parser() -> argparse.ArgumentParser:
     youtube_upload.add_argument("--approve-public", action="store_true")
     youtube_upload.add_argument("--dry-run", action="store_true")
     youtube_upload.add_argument("--force", action="store_true")
+    youtube_upload.add_argument("--video-file", type=Path, default=None, help="specific MP4 inside out_dir to upload")
     youtube_upload.add_argument("--title", default="")
     youtube_upload.add_argument("--description-file", type=Path, default=None)
     youtube_upload.add_argument("--tags", default="")

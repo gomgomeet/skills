@@ -56,11 +56,13 @@ can also hand off to local privacy review and publish packaging commands.
    python .\scripts\agent.py readiness "<output folder>"
    python .\scripts\agent.py privacy-review "<output folder>"
    python .\scripts\agent.py package "<output folder>" --target youtube
+   python .\scripts\agent.py continue "<output folder>" --target youtube
    ```
 
    `readiness` stress-tests missing gates, `privacy-review` creates local frame and
    sensitive-text review artifacts, and `package` writes metadata/checklist files
-   without copying large media unless `--copy-media` is explicit.
+   without copying large media unless `--copy-media` is explicit. `continue` runs the
+   safe missing post-edit steps automatically and then stops at the human approval gate.
 
 ## Recording Completion Rules
 

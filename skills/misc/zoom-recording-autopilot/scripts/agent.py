@@ -1198,6 +1198,84 @@ def run_package(args: argparse.Namespace) -> int:
     return 0
 
 
+def run_continue(args: argparse.Namespace) -> int:
+    out_dir = Path(args.out_dir).expanduser().resolve()
+    if not out_dir.exists():
+        raise AgentError(f"Output directory not found: {out_dir}")
+
+    actions: list[str] = []
+    update_state(out_dir, status="auto_continuing")
+    artifacts = locate_artifacts(out_dir)
+    if not artifacts["preferred_video"]:
+        raise AgentError("No edited video found. Run prepare/render first or pass the correct output folder.")
+
+    if args.refresh_privacy or not artifacts["privacy_review"]:
+        privacy_args = argparse.Namespace(
+            out_dir=str(out_dir),
+            video=args.video,
+            interval_sec=args.interval_sec,
+            max_frames=args.max_frames,
+            no_extract=args.no_extract,
+        )
+        run_privacy_review(privacy_args)
+        actions.append("privacy-review")
+    else:
+        actions.append("privacy-review: skipped existing report")
+
+    artifacts = locate_artifacts(out_dir)
+    checklist = artifacts["publish_dir"] / "upload-checklist.md"
+    if args.refresh_package or not checklist.exists():
+        package_args = argparse.Namespace(
+            out_dir=str(out_dir),
+            target=args.target,
+            publish_dir=args.publish_dir,
+            copy_media=args.copy_media,
+        )
+        run_package(package_args)
+        actions.append("package")
+    else:
+        actions.append("package: skipped existing package")
+
+    checks, artifacts = readiness_checks(out_dir)
+    report = build_readiness_markdown(out_dir, checks, artifacts)
+    report_path = out_dir / "review" / "readiness_report.md"
+    write_text(report_path, report)
+    actions.append("readiness")
+
+    blockers = [c for c in checks if c["status"] == "blocker"]
+    reviews = [c for c in checks if c["status"] == "review"]
+    state_status = "blocked" if blockers else ("waiting_for_human_gate" if reviews else "ready_for_publish_decision")
+    update_state(
+        out_dir,
+        status=state_status,
+        continue_actions=actions,
+        readiness_report=str(report_path),
+        open_gates=checks,
+    )
+    write_json(
+        out_dir / "logs" / "continue.json",
+        {
+            "created_at": now_iso(),
+            "actions": actions,
+            "status": state_status,
+            "checks": checks,
+        },
+    )
+
+    print("\nAuto-continue actions")
+    for action in actions:
+        print(f"  - {action}")
+    print(f"\nReadiness report: {report_path}")
+    print("\nOpen gates")
+    if not blockers and not reviews:
+        print("  none")
+    for check in blockers + reviews:
+        print(f"  {check['status']:7} {check['gate']:16} {check['detail']}")
+    if reviews:
+        print("\nStopped at human approval gate.")
+    return 2 if blockers else 0
+
+
 def add_common_plan_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--min-silence", type=float, default=None)
     parser.add_argument("--pad", type=float, default=None)
@@ -1289,6 +1367,19 @@ def build_parser() -> argparse.ArgumentParser:
     package.add_argument("--publish-dir", type=Path, default=None)
     package.add_argument("--copy-media", action="store_true")
     package.set_defaults(func=run_package)
+
+    cont = sub.add_parser("continue", help="continue safe local video work until a human gate")
+    cont.add_argument("out_dir", help="existing output directory")
+    cont.add_argument("--target", choices=["youtube", "lms", "drive"], default="youtube")
+    cont.add_argument("--publish-dir", type=Path, default=None)
+    cont.add_argument("--copy-media", action="store_true")
+    cont.add_argument("--video", type=Path, default=None)
+    cont.add_argument("--interval-sec", type=float, default=600.0)
+    cont.add_argument("--max-frames", type=int, default=24)
+    cont.add_argument("--no-extract", action="store_true")
+    cont.add_argument("--refresh-privacy", action="store_true")
+    cont.add_argument("--refresh-package", action="store_true")
+    cont.set_defaults(func=run_continue)
 
     return parser
 

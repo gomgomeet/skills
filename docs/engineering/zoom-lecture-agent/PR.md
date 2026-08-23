@@ -26,6 +26,7 @@
   - `readiness`: 완성본, 렌더 드리프트, 자막, 분할본, 챕터, 개인정보 검수, 게시 패키지 게이트 점검
   - `privacy-review`: 로컬 프레임 샘플/contact sheet 및 민감 텍스트 스캔 보고서 생성
   - `package`: 업로드 메타데이터, 체크리스트, 다음 작업 티켓 생성
+  - `continue`: 누락된 로컬 후속 작업을 자동 실행하고 사람 승인 게이트에서 정지
 
 ### Documentation
 
@@ -61,6 +62,7 @@ python .\skills\misc\zoom-recording-autopilot\scripts\agent.py skills
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py privacy-review "<합성 줌 녹화 폴더>\_lve_output" --max-frames 5 --interval-sec 20
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py package "<합성 줌 녹화 폴더>\_lve_output" --target youtube
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py readiness "<합성 줌 녹화 폴더>\_lve_output"
+python .\skills\misc\zoom-recording-autopilot\scripts\agent.py continue "<합성 줌 녹화 폴더>\_lve_output" --target youtube
 python "<skill-creator>\scripts\quick_validate.py" "<각 후보 스킬 폴더>"
 ```
 
@@ -71,6 +73,7 @@ python "<skill-creator>\scripts\quick_validate.py" "<각 후보 스킬 폴더>"
 - 합성 60초 줌 녹화에서 컷 후보 5개 생성
 - 확인 필요 컷 승인 후 42초 draft 마스터 렌더 성공
 - 개인정보 검수 보고서, contact sheet, 게시 메타데이터, 체크리스트 생성 성공
+- `continue`가 기존 산출물을 재사용하고 readiness를 갱신한 뒤 승인 게이트에서 정지함
 - readiness 게이트가 완성본, 개인정보 검수, 게시 패키지를 인식하고,
   개인정보 검수는 `CLEAR_FOR_PUBLISH: yes` 전까지 review 상태로 유지함
 - 후보 스킬 3개 모두 `quick_validate.py` 통과

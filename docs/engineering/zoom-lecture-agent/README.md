@@ -74,6 +74,7 @@ python .\skills\misc\zoom-recording-autopilot\scripts\agent.py watch "C:\Users\<
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py readiness "<출력 폴더>"
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py privacy-review "<출력 폴더>"
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py package "<출력 폴더>" --target youtube
+python .\skills\misc\zoom-recording-autopilot\scripts\agent.py continue "<출력 폴더>" --target youtube
 ```
 
 - `readiness`: 마스터 영상, 렌더 드리프트, 자막, 분할본, 챕터, 개인정보 검수,
@@ -85,6 +86,8 @@ python .\skills\misc\zoom-recording-autopilot\scripts\agent.py package "<출력 
 - `package`: 원본 영상을 복사하지 않고 경로를 참조한 채 `publish/metadata.md`,
   `publish/upload-checklist.md`, `publish/agent-tickets.md`를 만든다. 영상까지 복사하려면
   `--copy-media`를 명시한다.
+- `continue`: 개인정보 검수와 게시 패키지 중 빠진 작업을 자동으로 진행하고,
+  `review/readiness_report.md`를 갱신한 뒤 사람 승인 게이트에서 멈춘다.
 
 ## 상태 흐름
 
@@ -99,6 +102,8 @@ privacy-review
   -> privacy_review_ready
 package
   -> publish_package_ready
+continue
+  -> waiting_for_human_gate | ready_for_publish_decision
 ```
 
 안전장치:

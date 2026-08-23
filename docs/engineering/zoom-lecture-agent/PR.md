@@ -4,6 +4,9 @@
 
 - 줌 녹화 폴더를 분석하고 컷 리스트를 제안하는 로컬 에이전트 CLI를 추가했습니다.
 - 컷 승인 전 렌더링을 막는 승인 게이트와 작업 상태 파일을 추가했습니다.
+- `grill-me`, `domain-modeling`, `to-spec/to-tickets` 패턴을 에이전트의 readiness
+  게이트와 다음 작업 티켓으로 적용했습니다.
+- 개인정보 검수와 게시 패키징 명령을 추가해 완성본 이후 작업까지 이어지게 했습니다.
 - 합성 줌 녹화로 `prepare → replan → render(draft)` 흐름을 검증했습니다.
 - 편집 전후 운영을 분리하기 위해 보조 Codex 스킬 3개를 만들고 설치했습니다.
 
@@ -19,9 +22,14 @@
   - `render`: 승인된 컷으로 마스터 렌더
   - `watch`: 줌 녹화 폴더 감시 후 안정화된 녹화만 `prepare`
   - `summary`: 작업 상태 요약
+  - `skills`: 에이전트에 적용된 보조 스킬 맵 표시
+  - `readiness`: 완성본, 렌더 드리프트, 자막, 분할본, 챕터, 개인정보 검수, 게시 패키지 게이트 점검
+  - `privacy-review`: 로컬 프레임 샘플/contact sheet 및 민감 텍스트 스캔 보고서 생성
+  - `package`: 업로드 메타데이터, 체크리스트, 다음 작업 티켓 생성
 
 ### Documentation
 
+- `CONTEXT.md`: 승인 게이트, 개인정보 검수, 게시 패키지 용어 추가
 - `docs/engineering/zoom-lecture-agent/README.md`: 실행 방법과 승인 흐름 문서화
 - `docs/engineering/zoom-lecture-agent/config.example.json`: 기본 설정 예시
 - `docs/engineering/zoom-lecture-agent/TROUBLESHOOTING.md`: 한글 Windows 콘솔 인코딩 문제 기록
@@ -49,6 +57,10 @@ python -m py_compile .\skills\misc\zoom-recording-autopilot\scripts\agent.py
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py prepare "<합성 줌 녹화 폴더>"
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py replan "<합성 줌 녹화 폴더>\_lve_output" --confirm-cuts 3
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py render "<합성 줌 녹화 폴더>\_lve_output" --approve-cuts --preset draft
+python .\skills\misc\zoom-recording-autopilot\scripts\agent.py skills
+python .\skills\misc\zoom-recording-autopilot\scripts\agent.py privacy-review "<합성 줌 녹화 폴더>\_lve_output" --max-frames 5 --interval-sec 20
+python .\skills\misc\zoom-recording-autopilot\scripts\agent.py package "<합성 줌 녹화 폴더>\_lve_output" --target youtube
+python .\skills\misc\zoom-recording-autopilot\scripts\agent.py readiness "<합성 줌 녹화 폴더>\_lve_output"
 python "<skill-creator>\scripts\quick_validate.py" "<각 후보 스킬 폴더>"
 ```
 
@@ -58,6 +70,9 @@ python "<skill-creator>\scripts\quick_validate.py" "<각 후보 스킬 폴더>"
 - 에이전트 문법 검사 통과
 - 합성 60초 줌 녹화에서 컷 후보 5개 생성
 - 확인 필요 컷 승인 후 42초 draft 마스터 렌더 성공
+- 개인정보 검수 보고서, contact sheet, 게시 메타데이터, 체크리스트 생성 성공
+- readiness 게이트가 완성본, 개인정보 검수, 게시 패키지를 인식하고,
+  개인정보 검수는 `CLEAR_FOR_PUBLISH: yes` 전까지 review 상태로 유지함
 - 후보 스킬 3개 모두 `quick_validate.py` 통과
 
 ## Notes

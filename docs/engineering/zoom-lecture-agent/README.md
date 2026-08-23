@@ -8,9 +8,11 @@
 
 ```powershell
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py doctor
+python .\skills\misc\zoom-recording-autopilot\scripts\agent.py skills
 ```
 
 `ffmpeg`, `ffprobe`, Python, `faster-whisper`, `lecture-video-editor` 스크립트를 확인한다.
+`skills`는 에이전트에 적용된 보조 스킬과 사용 지점을 보여준다.
 
 ## 1. 녹화 폴더 분석
 
@@ -64,6 +66,26 @@ python .\skills\misc\zoom-recording-autopilot\scripts\agent.py watch "C:\Users\<
 새 녹화 폴더가 생기고 영상 파일 크기가 일정 시간 동안 변하지 않으면 자동으로
 `prepare`까지만 실행한다. 렌더링은 컷 승인 뒤에 별도로 실행한다.
 
+## 6. 게시 전 검수와 패키징
+
+이미 완성본이 있는 출력 폴더는 바로 게시 준비 상태를 점검할 수 있다.
+
+```powershell
+python .\skills\misc\zoom-recording-autopilot\scripts\agent.py readiness "<출력 폴더>"
+python .\skills\misc\zoom-recording-autopilot\scripts\agent.py privacy-review "<출력 폴더>"
+python .\skills\misc\zoom-recording-autopilot\scripts\agent.py package "<출력 폴더>" --target youtube
+```
+
+- `readiness`: 마스터 영상, 렌더 드리프트, 자막, 분할본, 챕터, 개인정보 검수,
+  게시 패키지의 누락 상태를 `review/readiness_report.md`로 정리한다.
+- `privacy-review`: 영상 프레임을 로컬로 추출하고, 자막/대본에서 이메일, 전화번호,
+  Zoom 링크, 명단 관련 키워드를 찾아 `review/privacy_review.md`를 만든다.
+  contact sheet를 사람이 확인한 뒤 공개 가능하면 보고서의 `CLEAR_FOR_PUBLISH: no`를
+  `CLEAR_FOR_PUBLISH: yes`로 바꾼다.
+- `package`: 원본 영상을 복사하지 않고 경로를 참조한 채 `publish/metadata.md`,
+  `publish/upload-checklist.md`, `publish/agent-tickets.md`를 만든다. 영상까지 복사하려면
+  `--copy-media`를 명시한다.
+
 ## 상태 흐름
 
 ```text
@@ -73,6 +95,10 @@ transcribe --approve-cuts
   -> waiting_for_script_approval
 render --approve-cuts [--approve-script]
   -> completed
+privacy-review
+  -> privacy_review_ready
+package
+  -> publish_package_ready
 ```
 
 안전장치:
@@ -80,3 +106,14 @@ render --approve-cuts [--approve-script]
 - 컷 승인 없이는 전사 보정이나 렌더링을 실행하지 않는다.
 - `final_script.md`가 있으면 대본 승인 없이는 렌더링하지 않는다.
 - 각 단계의 stdout/stderr는 `_lve_output/logs/*.json`에 남는다.
+- 개인정보 검수와 게시 패키징은 로컬 파일만 만들며 업로드는 수행하지 않는다.
+
+## 적용된 보조 스킬
+
+- `lecture-privacy-review`: 업로드 전 프레임 샘플과 민감 텍스트 점검을 별도 보고서로 분리
+- `lecture-publish-packager`: 자막, 챕터, 메타데이터, 체크리스트 패키징
+- `grill-me / grill-with-docs`: 게시 준비 단계에서 남은 질문과 블로커를 강하게 드러냄
+- `domain-modeling`: `waiting_for_cut_approval`, `privacy_review_ready`,
+  `publish_package_ready`처럼 상태와 승인 게이트를 명시
+- `to-spec / to-tickets`: `readiness_report.md`와 `agent-tickets.md`에 다음 작업과
+  blocking edge를 남김

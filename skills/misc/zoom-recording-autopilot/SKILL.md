@@ -8,13 +8,15 @@ description: Set up or operate a local Zoom recording watcher that prepares lect
 Use this skill when the user wants Zoom class recordings to be detected after a lesson,
 queued for analysis, or prepared automatically for the lecture editing pipeline. This
 skill coordinates the watcher and approval gates; use `lecture-video-editor` for the
-actual cut analysis and rendering behavior.
+actual cut analysis and rendering behavior. After an approved master exists, this skill
+can also hand off to local privacy review and publish packaging commands.
 
 ## Boundaries
 
 - Keep video and audio files local. Do not upload recordings to external services.
 - Do not render a final edited video merely because a new recording appeared.
 - Stop after `prepare` unless the user explicitly approves the cut list.
+- Do not upload, email, or share publish packages by default.
 - Treat cloud recording downloads, account APIs, or third-party storage as separate
   actions that require explicit user authorization.
 
@@ -46,6 +48,19 @@ actual cut analysis and rendering behavior.
    ```powershell
    python .\scripts\agent.py render "<recording>\_lve_output" --approve-cuts
    ```
+
+6. Once a master or full-video output exists, continue with the applied post-edit
+   skills:
+
+   ```powershell
+   python .\scripts\agent.py readiness "<output folder>"
+   python .\scripts\agent.py privacy-review "<output folder>"
+   python .\scripts\agent.py package "<output folder>" --target youtube
+   ```
+
+   `readiness` stress-tests missing gates, `privacy-review` creates local frame and
+   sensitive-text review artifacts, and `package` writes metadata/checklist files
+   without copying large media unless `--copy-media` is explicit.
 
 ## Recording Completion Rules
 

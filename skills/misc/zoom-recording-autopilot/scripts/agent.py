@@ -56,6 +56,10 @@ APPLIED_SKILLS = [
         "agent_use": "create hook-focused Korean title candidates immediately after full-video review and before publish metadata is finalized",
     },
     {
+        "name": "lecture-visual-design-director",
+        "agent_use": "turn title hooks, chapters, and OpenDesign video patterns into thumbnail, intro, overlay, and key-frame direction",
+    },
+    {
         "name": "lecture-youtube-uploader",
         "agent_use": "upload approved publish packages to a locked YouTube channel only after explicit upload and visibility approval",
     },
@@ -385,6 +389,11 @@ def locate_artifacts(out_dir: Path) -> dict[str, Any]:
     part_videos = sorted_unique_part_videos(part_candidates)
     master_videos = sorted_existing(list((out_dir / "master").glob("*_master.mp4")))
     all_mp4s = sorted_existing(list(out_dir.glob("*.mp4")) + list(final_dir.glob("*.mp4")) if final_dir.exists() else list(out_dir.glob("*.mp4")))
+    all_video_candidates: list[Path] = []
+    for folder in [out_dir, final_dir, out_dir / "parts", out_dir / "master"]:
+        if folder.exists():
+            all_video_candidates.extend(folder.glob("*.mp4"))
+    all_videos = sorted({str(path.resolve()): path for path in all_video_candidates}.values(), key=lambda p: p.name)
 
     subtitle_candidates = []
     for folder in [out_dir / "subtitles", out_dir / "subs", final_dir, out_dir / "parts"]:
@@ -407,6 +416,7 @@ def locate_artifacts(out_dir: Path) -> dict[str, Any]:
 
     privacy_review = review_dir / "privacy_review.md"
     title_hooks = publish_dir / "title_hooks.md"
+    visual_design = publish_dir / "visual_design.md"
     readiness_report = review_dir / "readiness_report.md"
     existing_review_sheets = sorted(review_dir.glob("*.png"), key=lambda p: p.name) if review_dir.exists() else []
     render_logs = sorted_existing(
@@ -424,6 +434,7 @@ def locate_artifacts(out_dir: Path) -> dict[str, Any]:
         "master_video": master_videos[0] if master_videos else None,
         "preferred_video": (full_videos[0] if full_videos else (master_videos[0] if master_videos else (all_mp4s[0] if all_mp4s else None))),
         "part_videos": part_videos,
+        "all_videos": all_videos,
         "subtitles": subtitles,
         "chapters": chapters,
         "transcripts": transcript_candidates,
@@ -431,6 +442,7 @@ def locate_artifacts(out_dir: Path) -> dict[str, Any]:
         "publish_dir": publish_dir,
         "privacy_review": privacy_review if privacy_review.exists() else None,
         "title_hooks": title_hooks if title_hooks.exists() else None,
+        "visual_design": visual_design if visual_design.exists() else None,
         "readiness_report": readiness_report if readiness_report.exists() else None,
         "review_sheets": existing_review_sheets,
         "render_logs": render_logs,
@@ -922,6 +934,11 @@ def readiness_checks(out_dir: Path) -> tuple[list[dict[str, str]], dict[str, Any
     else:
         add("review", "title hooks", "run hook-title after full-video review and before upload metadata approval")
 
+    if artifacts["visual_design"]:
+        add("pass", "visual design brief", str(artifacts["visual_design"]))
+    else:
+        add("review", "visual design brief", "run visual-design after hook-title to set thumbnail, intro, overlay, and key-frame direction")
+
     if artifacts["privacy_review"]:
         privacy_text = read_text(artifacts["privacy_review"])
         if re.search(r"clear_for_publish\s*:\s*(yes|true)", privacy_text, re.I):
@@ -980,9 +997,12 @@ def build_readiness_markdown(out_dir: Path, checks: list[dict[str, str]], artifa
         "   - Blocked by: edited video",
         "   - Delivers: local frame samples and sensitive-text scan for human inspection",
         "2. Publish package",
-        "   - Blocked by: privacy review decision",
+        "   - Blocked by: privacy review decision and visual design brief",
         "   - Delivers: metadata, subtitles, chapters, and upload checklist",
-        "3. Upload decision",
+        "3. Visual design brief",
+        "   - Blocked by: title hooks and chapter review",
+        "   - Delivers: thumbnail, intro card, overlay, and key-frame direction",
+        "4. Upload decision",
         "   - Blocked by: checklist completion and visibility choice",
         "   - Delivers: explicit go/no-go for YouTube, LMS, or Drive",
         "",
@@ -1358,6 +1378,242 @@ def run_hook_title(args: argparse.Namespace) -> int:
     return 0
 
 
+def clean_markdown_value(value: str) -> str:
+    return value.strip().strip("`").strip()
+
+
+def parse_title_hook_sections(title_hooks: Path | None) -> list[dict[str, str]]:
+    if not title_hooks or not title_hooks.exists():
+        return []
+    sections: list[dict[str, str]] = []
+    current: dict[str, str] | None = None
+    key_map = {
+        "Video": "video",
+        "Chapter source": "chapter_source",
+        "Recommended": "title",
+        "Small label": "screen_label",
+        "Line 1": "line1",
+        "Line 2": "line2",
+        "Thumbnail phrase": "thumbnail",
+    }
+    for raw_line in read_text(title_hooks).splitlines():
+        line = raw_line.strip()
+        if line.startswith("## "):
+            if current:
+                sections.append(current)
+            current = {"section": line[3:].strip()}
+            continue
+        if not current or not line.startswith("- "):
+            continue
+        body = line[2:]
+        for label, key in key_map.items():
+            prefix = f"{label}:"
+            if body.startswith(prefix):
+                current[key] = clean_markdown_value(body[len(prefix) :])
+                break
+    if current:
+        sections.append(current)
+    return sections
+
+
+def select_video_set_for_publish(args: argparse.Namespace, artifacts: dict[str, Any], out_dir: Path) -> list[Path]:
+    if getattr(args, "video_file", None):
+        return [validate_upload_video(out_dir, args.video_file)]
+    queue_file = getattr(args, "queue_file", None)
+    if queue_file:
+        queue_path = Path(queue_file).expanduser().resolve()
+        queue = read_json(queue_path, default=[])
+        if not isinstance(queue, list):
+            raise AgentError(f"Upload queue must be a JSON array: {queue_path}")
+        videos: list[Path] = []
+        for item in queue:
+            if not isinstance(item, dict) or not item.get("video"):
+                continue
+            candidate = Path(str(item["video"])).expanduser().resolve()
+            try:
+                candidate.relative_to(out_dir)
+            except ValueError:
+                continue
+            videos.append(validate_upload_video(out_dir, candidate))
+        if videos:
+            return videos
+        raise AgentError(f"No queue videos belong to output directory: {out_dir}")
+    if getattr(args, "all_videos", False) and artifacts["all_videos"]:
+        return artifacts["all_videos"]
+    if getattr(args, "parts_only", False) and artifacts["part_videos"]:
+        return artifacts["part_videos"]
+    if artifacts["part_videos"]:
+        return artifacts["part_videos"]
+    if artifacts["preferred_video"]:
+        return [artifacts["preferred_video"]]
+    return []
+
+
+def title_hook_for_video(video: Path, hook_sections: list[dict[str, str]]) -> dict[str, str]:
+    video_str = str(video)
+    for section in hook_sections:
+        hook_video = section.get("video", "")
+        if hook_video and Path(hook_video).name == video.name:
+            return section
+        if hook_video == video_str:
+            return section
+    return {}
+
+
+def build_visual_design_markdown(
+    out_dir: Path,
+    artifacts: dict[str, Any],
+    videos: list[Path],
+    *,
+    style: str,
+    brand_source: str,
+) -> str:
+    hook_sections = parse_title_hook_sections(artifacts.get("title_hooks"))
+    source_text = " ".join([artifacts["title"], out_dir.name] + [p.name for p in artifacts["chapters"]])
+    platform = infer_platform_name(source_text)
+    level = infer_lecture_level(source_text)
+    style_label = {
+        "teacher-friendly": "차분한 교사용 강의",
+        "lecture-clean": "깔끔한 강의 아카이브",
+        "short-form": "짧은 클립/쇼츠 강조",
+    }.get(style, style)
+
+    lines = [
+        f"# Visual Design Brief - {artifacts['title']}",
+        "",
+        f"- Generated: {now_iso()}",
+        f"- Output folder: `{out_dir}`",
+        f"- Style mode: {style_label}",
+        f"- Brand source: {brand_source or 'not provided; use local lecture defaults and mark as provisional'}",
+        "- Upload strategy: finished segment videos only, not full lecture masters",
+        "",
+        "## Design Read",
+        "",
+        f"- Audience: {level} 학습자와 수업 준비 중인 교사",
+        f"- Content posture: {platform} 화면을 따라 하는 실습형 강의",
+        "- Visual posture: 조용하고 읽기 쉬운 교육용 UI, 과한 광고식 모션보다 단계 이해를 우선",
+        "- Motion posture: 핵심 조작 지점만 강조하고 원본 화면 공유를 가리지 않는다",
+        "- Density: 중간. 한 프레임에는 하나의 개념 또는 하나의 조작만 담는다",
+        "",
+        "## OpenDesign Patterns Applied",
+        "",
+        "- `video-hyperframes`: 조각영상마다 hook frame, proof frames, recap/CTA frame으로 나누고 대표 프레임 메타데이터를 남긴다.",
+        "- `youtube-clipper`: 하이라이트 후보는 원본 다운로드가 아니라 로컬 조각영상, 챕터, 자막에서만 뽑는다.",
+        "- `chat-motion-overlay`: 질문/답변 오버레이는 투명 배경 카드처럼 만들되 학생 이름, 채팅 원문, 개인정보는 쓰지 않는다.",
+        "- `vfx-text-cursor`: 인트로 금언 효과는 실제 강의 문장이나 제목 문구만 사용하고 임의의 명언을 만들지 않는다.",
+        "- `brand-extract`/`color-expert`: 색과 글꼴은 브랜드 자료가 있으면 측정값을 우선하고, 없으면 아래 기본 토큰을 임시값으로 표시한다.",
+        "- `creative-director`/`design-brief`: 예쁜 화면보다 대상, 목표, 정보 밀도, 모션 톤, 금지 패턴을 먼저 고정한다.",
+        "",
+        "## Global Visual Tokens",
+        "",
+        "- Canvas: 1920x1080 for lecture cards and thumbnails; keep important text inside 160px side margins and 110px vertical margins.",
+        "- Typography: prefer `Noto Sans KR` or installed Korean sans; use one display/body family unless a brand kit says otherwise.",
+        "- Provisional palette: background `#F7F9FC`, foreground `#14213D`, muted `#5C667A`, accent `#2F80ED`, warm support `#F2994A`, caution `#D64545`.",
+        "- Contrast: title and button-like labels must meet WCAG AA against the frame background.",
+        "- Shape: thumbnails and title cards use one radius scale, 8-12px; avoid nested cards.",
+        "- Motion: use short fades, cursor/click highlights, and callout slides; avoid generic purple/blue AI gradients and decorative bokeh.",
+        "",
+        "## Segment Directions",
+        "",
+    ]
+
+    for index, video in enumerate(videos, start=1):
+        hook = title_hook_for_video(video, hook_sections)
+        chapter_file = find_chapter_file_for_video(video, artifacts["chapters"])
+        topics = chapter_topics(chapter_file)
+        part_no = detect_part_number(video)
+        title = hook.get("title") or hook_recommended_title(platform, level, part_no, topics, artifacts["title"])
+        layout = {
+            "label": hook.get("screen_label", f"{platform} {level} {part_no}부" if part_no else f"{platform} {level}".strip()),
+            "line1": hook.get("line1", title.split("｜", 1)[0].strip()),
+            "line2": hook.get("line2", title.split("｜", 1)[1].split("[", 1)[0].strip() if "｜" in title else ""),
+            "thumbnail": hook.get("thumbnail", ""),
+        }
+        topic_preview = topics[:4] if topics else ["챕터 정보 없음"]
+        safe_thumbnail = layout["thumbnail"] or layout["line2"] or layout["line1"]
+        lines += [
+            f"### {index}. {title}",
+            "",
+            f"- Video: `{video}`",
+            f"- Chapter source: `{chapter_file}`" if chapter_file else "- Chapter source: not found",
+            f"- Screen label: {layout['label']}",
+            f"- Screen line 1: {layout['line1']}",
+            f"- Screen line 2: {layout['line2']}",
+            f"- Thumbnail phrase: {safe_thumbnail}",
+            f"- Chapter signals: {', '.join(topic_preview)}",
+            "",
+            "#### Key-Frame Plan",
+            "",
+            f"1. Hook frame: `{layout['line1']}`를 크게 두고 `{layout['line2'] or safe_thumbnail}`를 두 번째 줄로 배치한다.",
+            "2. Proof frame: 실제 화면 조작이 보이는 장면을 대표 프레임으로 고르고, 커서 또는 클릭 링만 작게 강조한다.",
+            "3. Recap frame: 오늘 만든 결과물 또는 다음에 할 행동을 한 문장으로 정리한다.",
+            "",
+            "#### Overlay Notes",
+            "",
+            "- 오버레이는 화면 시연을 가리지 않는 빈 공간에만 둔다.",
+            "- 한 오버레이는 6단어 안팎으로 유지하고 자막과 같은 문장을 반복하지 않는다.",
+            "- 질문형 오버레이를 쓰는 경우 실제 학생 이름이나 채팅 캡처는 넣지 않는다.",
+            "",
+        ]
+
+    lines += [
+        "## Thumbnail And Intro Rules",
+        "",
+        "- 업로드 제목은 한 줄, 화면/썸네일 제목은 작은 라벨 + 2줄 큰 제목으로 분리한다.",
+        "- 작은 라벨은 회차와 시리즈명만 담고, 큰 두 줄은 학습자가 얻는 결과를 담는다.",
+        "- 썸네일은 실제 노션 화면 또는 완성 결과를 보여주는 프레임을 우선한다.",
+        "- 인트로는 2-4초 이내로 유지하고, 본 강의 시작을 늦추지 않는다.",
+        "- 쇼츠/짧은 클립으로 재가공할 때는 첫 1초 안에 문제 또는 결과를 보여준다.",
+        "",
+        "## Preflight Checklist",
+        "",
+        "- [ ] 제목, 썸네일 문구, 인트로 문구가 같은 약속을 한다.",
+        "- [ ] 실제 영상에 없는 결과를 제목/오버레이가 약속하지 않는다.",
+        "- [ ] 모든 화면 텍스트가 모바일 썸네일에서도 읽힌다.",
+        "- [ ] 오버레이가 개인정보, 계정명, 채팅, 참가자 패널, 브라우저 탭을 다시 노출하지 않는다.",
+        "- [ ] 색상과 폰트가 한 영상 묶음 안에서 흔들리지 않는다.",
+        "- [ ] 캡션, 챕터, 설명란 링크가 조각영상 제목과 같은 회차를 가리킨다.",
+        "",
+        "## Source Notes",
+        "",
+        "- Adapted from OpenDesign repository patterns inspected from `nexu-io/open-design`: `video-hyperframes`, `youtube-clipper`, `chat-motion-overlay`, `vfx-text-cursor`, `brand-extract`, `creative-director`, `design-brief`, and `color-expert`.",
+        "- These are local design directions only. They do not upload media or send lecture video to external services.",
+    ]
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def run_visual_design(args: argparse.Namespace) -> int:
+    out_dir = Path(args.out_dir).expanduser().resolve()
+    if not out_dir.exists():
+        raise AgentError(f"Output directory not found: {out_dir}")
+    artifacts = locate_artifacts(out_dir)
+    if not artifacts["title_hooks"] and not args.force:
+        raise AgentError("Run hook-title first, or pass --force to create a visual brief from chapters and filenames.")
+
+    videos = select_video_set_for_publish(args, artifacts, out_dir)
+    if not videos:
+        raise AgentError("No video found for visual design planning.")
+
+    publish_dir = Path(args.publish_dir).expanduser().resolve() if args.publish_dir else artifacts["publish_dir"]
+    publish_dir.mkdir(parents=True, exist_ok=True)
+    output = Path(args.output).expanduser().resolve() if args.output else publish_dir / "visual_design.md"
+    write_text(
+        output,
+        build_visual_design_markdown(
+            out_dir,
+            artifacts,
+            videos,
+            style=args.style,
+            brand_source=args.brand_source,
+        ),
+    )
+    update_state(out_dir, status="visual_design_ready", visual_design=str(output))
+    print(f"Visual design brief: {output}")
+    for video in videos:
+        print(f"  - {video.name}")
+    return 0
+
+
 def copied_asset(src: Path, dest_dir: Path) -> Path:
     dest_dir.mkdir(parents=True, exist_ok=True)
     dest = dest_dir / src.name
@@ -1437,6 +1693,8 @@ def run_package(args: argparse.Namespace) -> int:
         metadata.append(f"- Subtitles: {', '.join(str(p) for p in copied_subtitles)}")
     if copied_chapters:
         metadata.append(f"- Chapters/transcript assets: {', '.join(str(p) for p in copied_chapters)}")
+    if artifacts["visual_design"]:
+        metadata.append(f"- Visual design brief: {artifacts['visual_design']}")
     metadata += [
         "",
         "## Pinned Comment Draft",
@@ -1452,6 +1710,7 @@ def run_package(args: argparse.Namespace) -> int:
         f"- [ ] Privacy review checked: `{privacy_review}`",
         "- [ ] Participant names, chat, notifications, browser tabs, account IDs checked",
         "- [ ] Title and description reviewed",
+        "- [ ] Visual design brief checked for thumbnail, intro card, overlay, and key-frame direction",
         "- [ ] Chapters pasted into description",
         "- [ ] Korean subtitles attached and spot-checked",
         "- [ ] Visibility selected intentionally",
@@ -1476,12 +1735,19 @@ def run_package(args: argparse.Namespace) -> int:
         "",
         "## 02 Publish metadata",
         "",
-        "**Blocked by:** 01 Privacy decision",
+        "**Blocked by:** 01 Privacy decision and visual design brief",
         "",
         "- [ ] Title, description, tags, and chapters approved",
         "- [ ] Subtitle file selected",
         "",
-        "## 03 Upload handoff",
+        "## 03 Visual design handoff",
+        "",
+        "**Blocked by:** title hooks",
+        "",
+        "- [ ] Thumbnail text and intro card use the small-label plus two-line layout",
+        "- [ ] Overlay text does not duplicate captions or expose private screen content",
+        "",
+        "## 04 Upload handoff",
         "",
         "**Blocked by:** 02 Publish metadata",
         "",
@@ -1500,6 +1766,7 @@ def run_package(args: argparse.Namespace) -> int:
         "chapters": [str(p) for p in copied_chapters],
         "metadata": str(publish_dir / "metadata.md"),
         "checklist": str(publish_dir / "upload-checklist.md"),
+        "visual_design": str(artifacts["visual_design"]) if artifacts["visual_design"] else None,
     }
     write_json(publish_dir / "publish_manifest.json", manifest)
     update_state(out_dir, status="publish_package_ready", publish_dir=str(publish_dir))
@@ -1547,6 +1814,25 @@ def run_continue(args: argparse.Namespace) -> int:
         actions.append("hook-title")
     else:
         actions.append("hook-title: skipped existing title hooks")
+
+    artifacts = locate_artifacts(out_dir)
+    if args.refresh_visual_design or not artifacts["visual_design"]:
+        visual_args = argparse.Namespace(
+            out_dir=str(out_dir),
+            publish_dir=args.publish_dir,
+            output=None,
+            video_file=None,
+            queue_file=None,
+            all_videos=False,
+            parts_only=True,
+            style=args.visual_style,
+            brand_source=args.brand_source,
+            force=False,
+        )
+        run_visual_design(visual_args)
+        actions.append("visual-design")
+    else:
+        actions.append("visual-design: skipped existing brief")
 
     artifacts = locate_artifacts(out_dir)
     checklist = artifacts["publish_dir"] / "upload-checklist.md"
@@ -2192,6 +2478,19 @@ def build_parser() -> argparse.ArgumentParser:
     title_hook.add_argument("--parts-only", action="store_true", help="title split part videos instead of the full/default video")
     title_hook.set_defaults(func=run_hook_title)
 
+    visual = sub.add_parser("visual-design", help="create OpenDesign-informed thumbnail, intro, overlay, and key-frame direction")
+    visual.add_argument("out_dir", help="existing output directory")
+    visual.add_argument("--publish-dir", type=Path, default=None)
+    visual.add_argument("--output", type=Path, default=None)
+    visual.add_argument("--video-file", type=Path, default=None, help="specific MP4 inside out_dir to plan")
+    visual.add_argument("--queue-file", type=Path, default=None, help="plan videos from an upload queue JSON that belong to out_dir")
+    visual.add_argument("--all-videos", action="store_true", help="plan every MP4 found directly under out_dir, final, parts, and master folders")
+    visual.add_argument("--parts-only", action="store_true", help="plan split part videos instead of the full/default video")
+    visual.add_argument("--style", choices=["teacher-friendly", "lecture-clean", "short-form"], default="teacher-friendly")
+    visual.add_argument("--brand-source", default="")
+    visual.add_argument("--force", action="store_true", help="allow planning without existing title_hooks.md")
+    visual.set_defaults(func=run_visual_design)
+
     package = sub.add_parser("package", help="create local publish metadata and checklist")
     package.add_argument("out_dir", help="existing output directory")
     package.add_argument("--target", choices=["youtube", "lms", "drive"], default="youtube")
@@ -2210,7 +2509,10 @@ def build_parser() -> argparse.ArgumentParser:
     cont.add_argument("--no-extract", action="store_true")
     cont.add_argument("--refresh-privacy", action="store_true")
     cont.add_argument("--refresh-title", action="store_true")
+    cont.add_argument("--refresh-visual-design", action="store_true")
     cont.add_argument("--refresh-package", action="store_true")
+    cont.add_argument("--visual-style", choices=["teacher-friendly", "lecture-clean", "short-form"], default="teacher-friendly")
+    cont.add_argument("--brand-source", default="")
     cont.set_defaults(func=run_continue)
 
     youtube_upload = sub.add_parser("youtube-upload", help="plan or perform an approved YouTube upload")

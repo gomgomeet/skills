@@ -10,13 +10,15 @@
 - YouTube 업로드 스킬과 `youtube-upload` 실행 게이트를 추가했습니다.
 - 전체 영상 검토 직후 후킹 제목 후보를 만드는 `lecture-title-hook-writer`와
   `hook-title` 단계를 추가했습니다.
+- OpenDesign의 영상/디자인 스킬 패턴을 조사해 강의용 `lecture-visual-design-director`와
+  `visual-design` 단계를 추가했습니다.
 - YouTube 사용자 표시값과 채널 ID를 로컬 잠금 파일로 고정하고, 실제 업로드 전
   OAuth로 인증된 채널 ID가 다르면 업로드를 중단하게 했습니다.
 - 인터넷으로 YouTube 업로드 도구와 공식 샘플을 조사한 뒤, 외부 CLI 설치 대신
   공식 Google API Python client의 chunked resumable upload와 지수 백오프 재시도를
   에이전트에 도입했습니다.
 - 합성 줌 녹화로 `prepare → replan → render(draft)` 흐름을 검증했습니다.
-- 편집 전후 운영을 분리하기 위해 보조 Codex 스킬 4개를 만들고 설치했습니다.
+- 편집 전후 운영을 분리하기 위해 보조 Codex 스킬 5개를 만들고 설치했습니다.
 
 ## Changes
 
@@ -39,6 +41,8 @@
   - `youtube-channel-lock`: YouTube 사용자 표시값과 고정 채널 ID 저장
   - `youtube-upload`: 업로드 계획 생성, 고정 채널 검증, 명시 승인 후 chunked resumable 업로드
   - `hook-title`: 개인정보/전체검토 직후 `publish/title_hooks.md` 생성, 패키징 메타데이터 제목 후보로 연결
+  - `visual-design`: 제목 훅과 챕터를 바탕으로 `publish/visual_design.md`에 썸네일, 인트로,
+    오버레이, 대표 프레임, 짧은 클립 방향 생성
 
 ### Documentation
 
@@ -62,6 +66,9 @@
     합성 콘텐츠 여부, 실제 업로드 승인, 고정 채널 검증을 분리
 - `skills/misc/lecture-title-hook-writer/SKILL.md`
   - 전체 영상 검토 직후 후킹 있는 제목 후보와 화면용 2줄 제목 배치를 생성
+- `skills/misc/lecture-visual-design-director/SKILL.md`
+  - OpenDesign의 `video-hyperframes`, `youtube-clipper`, `chat-motion-overlay`,
+    `vfx-text-cursor`, `brand-extract` 패턴을 강의용 시각 지시서로 적용
 
 로컬 Codex에는 동일한 스킬을 `C:\Users\이혜경교육대초등영어교육\.codex\skills` 아래에도 설치해 검증했습니다.
 
@@ -80,6 +87,7 @@ python .\skills\misc\zoom-recording-autopilot\scripts\agent.py privacy-review "<
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py package "<합성 줌 녹화 폴더>\_lve_output" --target youtube
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py readiness "<합성 줌 녹화 폴더>\_lve_output"
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py continue "<합성 줌 녹화 폴더>\_lve_output" --target youtube
+python .\skills\misc\zoom-recording-autopilot\scripts\agent.py visual-design "<실제 출력 폴더>" --parts-only
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py youtube-channel-lock --channel-lock-file ".\zoom_lecture_agent_test\youtube_channel_lock.json" --channel-id "UC0000000000000000000000" --youtube-user-id "test@example.com"
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py youtube-upload "<실제 출력 폴더>" --dry-run --privacy-status private --chunk-size-mb 64 --max-upload-retries 10
 python "<skill-creator>\scripts\quick_validate.py" "<각 후보 스킬 폴더>"
@@ -94,11 +102,12 @@ python "<skill-creator>\scripts\quick_validate.py" "<각 후보 스킬 폴더>"
 - 개인정보 검수 보고서, contact sheet, 게시 메타데이터, 체크리스트 생성 성공
 - `continue`가 기존 산출물을 재사용하고 readiness를 갱신한 뒤 승인 게이트에서 정지함
 - `youtube-upload --dry-run`이 실제 업로드 없이 `publish/youtube_upload_plan.json` 생성
+- `visual-design`이 실제 업로드 없이 OpenDesign 기반 `publish/visual_design.md` 생성
 - `youtube-channel-lock`이 로컬 잠금 파일을 만들고 업로드 계획에 고정 채널 정보를 포함함
 - `youtube-upload --dry-run` 계획에 chunk size와 max retry 설정이 포함됨
 - readiness 게이트가 완성본, 개인정보 검수, 게시 패키지를 인식하고,
   개인정보 검수는 `CLEAR_FOR_PUBLISH: yes` 전까지 review 상태로 유지함
-- 후보 스킬 4개 모두 `quick_validate.py` 통과
+- 후보 스킬 5개 모두 `quick_validate.py` 통과
 
 ## Notes
 

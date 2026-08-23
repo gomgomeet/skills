@@ -49,6 +49,10 @@ For YouTube-style publishing, prepare:
 If `lecture-title-hook-writer` is available, generate or read
 `publish/title_hooks.md` after the full-video review and before treating
 `metadata.md` title candidates as upload-ready.
+If `lecture-visual-design-director` is available, generate or read
+`publish/visual_design.md` after title hooks and before final upload checks so
+thumbnail, intro card, overlay, and representative-frame direction match the
+approved title.
 
 For LMS or Drive-style sharing, prepare:
 

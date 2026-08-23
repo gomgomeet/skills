@@ -74,6 +74,7 @@ python .\skills\misc\zoom-recording-autopilot\scripts\agent.py watch "C:\Users\<
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py readiness "<출력 폴더>"
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py privacy-review "<출력 폴더>"
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py hook-title "<출력 폴더>" --parts-only
+python .\skills\misc\zoom-recording-autopilot\scripts\agent.py visual-design "<출력 폴더>" --parts-only
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py package "<출력 폴더>" --target youtube
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py continue "<출력 폴더>" --target youtube
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py youtube-channel-lock --channel-id UC... --youtube-user-id "<YouTube 계정 표시값>"
@@ -91,6 +92,11 @@ python .\skills\misc\zoom-recording-autopilot\scripts\agent.py youtube-upload "<
   각 part별 추천 제목을 먼저 만든 뒤, 패키징 메타데이터가 그 추천 제목을 사용하게 한다.
   업로드 제목은 한 줄로 유지하고, 썸네일/인트로 화면에서는 작은 회차 라벨과
   두 줄 제목(`핵심 결과` / `범위 또는 경로`)로 나누어 배치한다.
+- `visual-design`: OpenDesign에서 가져온 영상 프레임, 클립, 오버레이, 디자인 브리프
+  패턴을 강의용으로 좁혀 `publish/visual_design.md`를 만든다. 각 조각영상의
+  썸네일 문구, 인트로 카드, 대표 proof frame, 오버레이 주의사항, 짧은 클립 후보를
+  제목 훅과 챕터 흐름에 맞춘다. 업로드 큐 기준으로 제외 영상을 빼야 할 때는
+  `--queue-file "<youtube_upload_queue.json>"`를 함께 쓴다.
 - `package`: 원본 영상을 복사하지 않고 경로를 참조한 채 `publish/metadata.md`,
   `publish/upload-checklist.md`, `publish/agent-tickets.md`를 만든다. 영상까지 복사하려면
   `--copy-media`를 명시한다.
@@ -139,6 +145,8 @@ privacy-review
   -> privacy_review_ready
 hook-title
   -> title_hooks_ready
+visual-design
+  -> visual_design_ready
 package
   -> publish_package_ready
 continue
@@ -152,7 +160,7 @@ youtube-upload --approve-upload
 - 컷 승인 없이는 전사 보정이나 렌더링을 실행하지 않는다.
 - `final_script.md`가 있으면 대본 승인 없이는 렌더링하지 않는다.
 - 각 단계의 stdout/stderr는 `_lve_output/logs/*.json`에 남는다.
-- 개인정보 검수와 게시 패키징은 로컬 파일만 만들며 업로드는 수행하지 않는다.
+- 개인정보 검수, 시각 디자인 브리프, 게시 패키징은 로컬 파일만 만들며 업로드는 수행하지 않는다.
 - YouTube 업로드는 `--approve-upload`, OAuth 설정, 고정 채널 일치 없이는 실행하지 않는다.
 - YouTube 업로드는 기본 64MB 청크와 지수 백오프 재시도로 긴 강의 파일의
   일시적 네트워크 실패를 복구한다.
@@ -163,6 +171,8 @@ youtube-upload --approve-upload
 - `lecture-publish-packager`: 자막, 챕터, 메타데이터, 체크리스트 패키징
 - `lecture-title-hook-writer`: 전체 영상 검토 직후 후킹 있는 제목 후보를 만들고
   업로드 메타데이터의 첫 후보로 연결
+- `lecture-visual-design-director`: OpenDesign 영상/디자인 패턴을 강의용으로 좁혀
+  썸네일, 인트로 카드, 오버레이, 대표 프레임, 짧은 클립 방향을 정리
 - `lecture-youtube-uploader`: 승인된 게시 패키지를 고정된 YouTube 채널로만
   업로드하되 OAuth, 공개 범위, 아동 대상 여부, 합성 콘텐츠 여부를 명시 승인으로 통제
 - `grill-me / grill-with-docs`: 게시 준비 단계에서 남은 질문과 블로커를 강하게 드러냄

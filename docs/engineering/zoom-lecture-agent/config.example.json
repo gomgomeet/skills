@@ -1,0 +1,16 @@
+{
+  "zoom_dir": "C:/Users/<user>/Documents/Zoom",
+  "noise": "-35dB",
+  "stable_sec": 120,
+  "poll_sec": 30,
+  "transcribe": {
+    "model": "medium",
+    "device": "auto",
+    "compute_type": "auto",
+    "language": "ko"
+  },
+  "render": {
+    "preset": "master",
+    "max_terms": 80
+  }
+}

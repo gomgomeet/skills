@@ -6,6 +6,7 @@ Tools I keep around but rarely use, not promoted in the plugin.
 - **[lecture-youtube-uploader](./lecture-youtube-uploader/SKILL.md)**: Upload an approved local lecture publish package to YouTube with explicit OAuth, visibility, audience, and upload approval gates.
 - **[lecture-title-hook-writer](./lecture-title-hook-writer/SKILL.md)**: Create hook-focused Korean YouTube title candidates for lecture videos after full edited-video review.
 - **[lecture-visual-design-director](./lecture-visual-design-director/SKILL.md)**: Create OpenDesign-informed thumbnail, intro, overlay, key-frame, and short-clip direction for lecture videos.
+- **[work-closeout-publisher](./work-closeout-publisher/SKILL.md)**: Finish a repo task by writing markdown handoff and PR summaries, then safely committing, merging, and pushing when requested.
 - **[migrate-to-shoehorn](./migrate-to-shoehorn/SKILL.md)**: Migrate test files from `as` type assertions to @total-typescript/shoehorn.
 - **[scaffold-exercises](./scaffold-exercises/SKILL.md)**: Create exercise directory structures with sections, problems, solutions, and explainers.
 - **[setup-pre-commit](./setup-pre-commit/SKILL.md)**: Set up Husky pre-commit hooks with lint-staged, Prettier, type checking, and tests.

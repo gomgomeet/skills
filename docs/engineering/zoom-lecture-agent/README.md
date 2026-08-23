@@ -75,6 +75,7 @@ python .\skills\misc\zoom-recording-autopilot\scripts\agent.py readiness "<출�
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py privacy-review "<출력 폴더>"
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py package "<출력 폴더>" --target youtube
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py continue "<출력 폴더>" --target youtube
+python .\skills\misc\zoom-recording-autopilot\scripts\agent.py youtube-channel-lock --channel-id UC... --youtube-user-id "<YouTube 계정 표시값>"
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py youtube-upload "<출력 폴더>" --dry-run --privacy-status private
 ```
 
@@ -89,13 +90,16 @@ python .\skills\misc\zoom-recording-autopilot\scripts\agent.py youtube-upload "<
   `--copy-media`를 명시한다.
 - `continue`: 개인정보 검수와 게시 패키지 중 빠진 작업을 자동으로 진행하고,
   `review/readiness_report.md`를 갱신한 뒤 사람 승인 게이트에서 멈춘다.
-- `youtube-upload`: YouTube 업로드 계획을 만들고, OAuth client secrets와
-  `--approve-upload`가 있을 때만 외부 업로드를 실행한다.
+- `youtube-channel-lock`: 업로드 대상 YouTube 채널 ID와 사용자 표시값을
+  `%USERPROFILE%\.opencodex\youtube_channel_lock.json`에 저장한다.
+- `youtube-upload`: YouTube 업로드 계획을 만들고, OAuth client secrets,
+  고정 채널 일치, `--approve-upload`가 모두 있을 때만 외부 업로드를 실행한다.
 
 실제 업로드 전 점검:
 
 ```powershell
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py youtube-doctor
+python .\skills\misc\zoom-recording-autopilot\scripts\agent.py youtube-channel-lock --channel-id UC... --youtube-user-id "<YouTube 계정 표시값>"
 python .\skills\misc\zoom-recording-autopilot\scripts\agent.py youtube-upload "<출력 폴더>" --dry-run --privacy-status private
 ```
 
@@ -135,14 +139,14 @@ youtube-upload --approve-upload
 - `final_script.md`가 있으면 대본 승인 없이는 렌더링하지 않는다.
 - 각 단계의 stdout/stderr는 `_lve_output/logs/*.json`에 남는다.
 - 개인정보 검수와 게시 패키징은 로컬 파일만 만들며 업로드는 수행하지 않는다.
-- YouTube 업로드는 `--approve-upload`와 OAuth 설정 없이는 실행하지 않는다.
+- YouTube 업로드는 `--approve-upload`, OAuth 설정, 고정 채널 일치 없이는 실행하지 않는다.
 
 ## 적용된 보조 스킬
 
 - `lecture-privacy-review`: 업로드 전 프레임 샘플과 민감 텍스트 점검을 별도 보고서로 분리
 - `lecture-publish-packager`: 자막, 챕터, 메타데이터, 체크리스트 패키징
-- `lecture-youtube-uploader`: 승인된 게시 패키지를 YouTube로 업로드하되 OAuth,
-  공개 범위, 아동 대상 여부, 합성 콘텐츠 여부를 명시 승인으로 통제
+- `lecture-youtube-uploader`: 승인된 게시 패키지를 고정된 YouTube 채널로만
+  업로드하되 OAuth, 공개 범위, 아동 대상 여부, 합성 콘텐츠 여부를 명시 승인으로 통제
 - `grill-me / grill-with-docs`: 게시 준비 단계에서 남은 질문과 블로커를 강하게 드러냄
 - `domain-modeling`: `waiting_for_cut_approval`, `privacy_review_ready`,
   `publish_package_ready`처럼 상태와 승인 게이트를 명시

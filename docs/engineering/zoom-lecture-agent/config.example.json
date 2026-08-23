@@ -12,5 +12,12 @@
   "render": {
     "preset": "master",
     "max_terms": 80
+  },
+  "youtube": {
+    "channel_lock_file": "C:/Users/<user>/.opencodex/youtube_channel_lock.json",
+    "youtube_user_id": "<YouTube account label>",
+    "channel_id": "UC...",
+    "channel_title": "<Channel title>",
+    "channel_handle": "@<handle>"
   }
 }

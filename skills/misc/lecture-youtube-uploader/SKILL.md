@@ -15,6 +15,9 @@ and a passed privacy/readiness gate.
 - Do not upload by default. First create or show the upload plan.
 - Upload only after explicit user approval of destination, visibility, audience,
   and whether captions should be uploaded.
+- Require a local YouTube channel lock before any real upload. The upload must
+  verify the authenticated `mine=true` channel ID and stop if it differs from
+  the configured lock.
 - Keep OAuth files local. Never commit or print `client_secrets.json`, access tokens,
   or refresh tokens.
 - Use `private` as the safest visibility unless the user explicitly chooses
@@ -29,6 +32,8 @@ and a passed privacy/readiness gate.
 - Video upload uses YouTube Data API `videos.insert` with OAuth and media upload.
 - The narrow video upload scope is
   `https://www.googleapis.com/auth/youtube.upload`.
+- Fixed-channel verification uses `channels.list` with `mine=true`; request
+  `https://www.googleapis.com/auth/youtube.readonly` in addition to upload scope.
 - Caption upload uses `captions.insert`, costs more quota than the video insert,
   and requires `https://www.googleapis.com/auth/youtube.force-ssl` or partner scope.
 - `videos.insert` supports setting `status.privacyStatus`,
@@ -56,13 +61,25 @@ Official references:
    python .\scripts\agent.py youtube-doctor
    ```
 
-3. Create an upload plan without uploading:
+3. Lock uploads to the intended YouTube channel before creating an approved
+   upload. Store the Google/YouTube user ID or email as a human-readable label,
+   but enforce the lock by canonical YouTube channel ID (`UC...`):
+
+   ```powershell
+   python .\scripts\agent.py youtube-channel-lock `
+     --channel-id "UC..." `
+     --youtube-user-id "<YouTube account label>" `
+     --channel-title "<Channel title>" `
+     --channel-handle "@<handle>"
+   ```
+
+4. Create an upload plan without uploading:
 
    ```powershell
    python .\scripts\agent.py youtube-upload "<output folder>" --dry-run --privacy-status private
    ```
 
-4. Upload only when the user has explicitly approved the upload and the YouTube
+5. Upload only when the user has explicitly approved the upload and the YouTube
    visibility. Require OAuth client secrets from the user's own Google Cloud project:
 
    ```powershell
@@ -74,7 +91,7 @@ Official references:
      --approve-upload
    ```
 
-5. For public uploads, require `--approve-public` as well:
+6. For public uploads, require `--approve-public` as well:
 
    ```powershell
    python .\scripts\agent.py youtube-upload "<output folder>" `
@@ -85,7 +102,7 @@ Official references:
      --approve-upload --approve-public
    ```
 
-6. If captions should be uploaded through the API, add `--upload-captions`.
+7. If captions should be uploaded through the API, add `--upload-captions`.
    This requires broader OAuth scope and may force re-authentication if the stored
    token was created with only the upload scope.
 
@@ -94,5 +111,8 @@ Official references:
 - Stop before upload if readiness gates are not all passing.
 - Stop before upload if `--made-for-kids` or `--contains-synthetic-media` is unset.
 - Stop before upload if `--client-secrets` is missing.
+- Stop before upload if the YouTube channel lock is missing.
+- Stop before upload if the OAuth-authenticated YouTube channel ID does not match
+  the configured channel lock.
 - Stop before public upload if `--approve-public` is missing.
 - Stop after writing `publish/youtube_upload_plan.json` when approval is absent.

@@ -51,7 +51,7 @@ APPLIED_SKILLS = [
     },
     {
         "name": "lecture-youtube-uploader",
-        "agent_use": "upload approved publish packages to YouTube only after explicit upload and visibility approval",
+        "agent_use": "upload approved publish packages to a locked YouTube channel only after explicit upload and visibility approval",
     },
     {
         "name": "grill-me / grill-with-docs",
@@ -1297,6 +1297,8 @@ def run_youtube_doctor(args: argparse.Namespace) -> int:
         print(f"  {mark:7} {name:24} {detail}")
     print("\nRequired OAuth scope for video upload:")
     print("  https://www.googleapis.com/auth/youtube.upload")
+    print("Channel lock verification additionally needs:")
+    print("  https://www.googleapis.com/auth/youtube.readonly")
     print("Caption upload additionally needs:")
     print("  https://www.googleapis.com/auth/youtube.force-ssl")
     return 0 if all(ok for _, ok, _ in checks) else 1
@@ -1333,8 +1335,85 @@ def default_youtube_token_file() -> Path:
     return Path.home() / ".opencodex" / "youtube_upload_token.json"
 
 
+def default_youtube_channel_lock_file() -> Path:
+    return Path.home() / ".opencodex" / "youtube_channel_lock.json"
+
+
+def resolve_channel_lock_file(path: Path | None) -> Path:
+    return Path(path).expanduser().resolve() if path else default_youtube_channel_lock_file()
+
+
+def read_youtube_channel_lock(path: Path) -> dict[str, Any]:
+    data = read_json(path, default={}) or {}
+    return data if isinstance(data, dict) else {}
+
+
+def validate_youtube_channel_id(channel_id: str) -> None:
+    if not re.match(r"^UC[A-Za-z0-9_-]{20,40}$", channel_id):
+        raise AgentError(
+            "YouTube channel lock requires the canonical channel ID, usually starting with UC. "
+            "Open YouTube Studio > Settings > Channel > Advanced settings to copy it."
+        )
+
+
+def run_youtube_channel_lock(args: argparse.Namespace) -> int:
+    lock_path = resolve_channel_lock_file(args.channel_lock_file)
+    existing = read_youtube_channel_lock(lock_path)
+    has_updates = any(
+        [
+            args.youtube_user_id,
+            args.channel_id,
+            args.channel_title,
+            args.channel_handle,
+        ]
+    )
+    if not has_updates:
+        print(f"YouTube channel lock: {lock_path}")
+        if not existing:
+            print("  status     : not configured")
+            print("  next step  : add --channel-id UC... and --youtube-user-id <account label>")
+            return 0
+        print(f"  status     : configured")
+        print(f"  user id    : {existing.get('youtube_user_id') or 'not set'}")
+        print(f"  channel id : {existing.get('channel_id') or 'not set'}")
+        print(f"  title      : {existing.get('channel_title') or 'not set'}")
+        print(f"  handle     : {existing.get('channel_handle') or 'not set'}")
+        print(f"  updated    : {existing.get('updated_at') or existing.get('created_at') or 'unknown'}")
+        return 0
+
+    channel_id = (args.channel_id or existing.get("channel_id") or "").strip()
+    if not channel_id:
+        raise AgentError("Set --channel-id UC... before locking YouTube uploads.")
+    validate_youtube_channel_id(channel_id)
+
+    now = now_iso()
+    lock = {
+        "created_at": existing.get("created_at") or now,
+        "updated_at": now,
+        "youtube_user_id": (args.youtube_user_id or existing.get("youtube_user_id") or "").strip(),
+        "channel_id": channel_id,
+        "channel_title": (args.channel_title or existing.get("channel_title") or "").strip(),
+        "channel_handle": (args.channel_handle or existing.get("channel_handle") or "").strip(),
+        "enforced_by": "channel_id",
+        "user_id_note": (
+            "Stored for human-readable account pinning. The YouTube upload OAuth scope does not expose "
+            "the Google account email, so upload blocking is enforced by channel_id."
+        ),
+    }
+    write_json(lock_path, lock)
+    print(f"YouTube channel lock saved: {lock_path}")
+    print(f"  user id    : {lock['youtube_user_id'] or 'not set'}")
+    print(f"  channel id : {lock['channel_id']}")
+    print(f"  title      : {lock['channel_title'] or 'not set'}")
+    print(f"  handle     : {lock['channel_handle'] or 'not set'}")
+    return 0
+
+
 def youtube_scopes(upload_captions: bool) -> list[str]:
-    scopes = ["https://www.googleapis.com/auth/youtube.upload"]
+    scopes = [
+        "https://www.googleapis.com/auth/youtube.upload",
+        "https://www.googleapis.com/auth/youtube.readonly",
+    ]
     if upload_captions:
         scopes.append("https://www.googleapis.com/auth/youtube.force-ssl")
     return scopes
@@ -1391,6 +1470,13 @@ def build_youtube_upload_plan(args: argparse.Namespace, out_dir: Path) -> dict[s
         raise AgentError("Public YouTube upload requires --approve-public.")
     if upload_required and not args.client_secrets:
         raise AgentError("YouTube upload requires --client-secrets pointing to a local OAuth client secrets JSON file.")
+    channel_lock_file = resolve_channel_lock_file(args.channel_lock_file)
+    channel_lock = read_youtube_channel_lock(channel_lock_file)
+    if upload_required and not channel_lock.get("channel_id"):
+        raise AgentError(
+            "YouTube upload requires a fixed channel lock. Run "
+            "`youtube-channel-lock --channel-id UC... --youtube-user-id <account label>` first."
+        )
 
     plan = {
         "created_at": now_iso(),
@@ -1408,10 +1494,13 @@ def build_youtube_upload_plan(args: argparse.Namespace, out_dir: Path) -> dict[s
         "upload_captions": bool(args.upload_captions),
         "client_secrets": str(Path(args.client_secrets).expanduser().resolve()) if args.client_secrets else None,
         "token_file": str(Path(args.token_file).expanduser().resolve() if args.token_file else default_youtube_token_file()),
+        "channel_lock_file": str(channel_lock_file),
+        "channel_lock": channel_lock or None,
         "api_notes": [
             "videos.insert uses YouTube Data API OAuth and resumable media upload.",
             "caption upload is separate and uses captions.insert with a broader scope.",
             "No upload is performed unless --approve-upload is present.",
+            "Approved uploads are blocked unless the authenticated YouTube channel ID matches the channel lock.",
         ],
     }
     return plan
@@ -1439,12 +1528,41 @@ def get_youtube_service(client_secrets: Path, token_file: Path, upload_captions:
     return build("youtube", "v3", credentials=creds)
 
 
+def verify_youtube_channel_lock(youtube: Any, lock: dict[str, Any]) -> dict[str, Any]:
+    expected_id = str(lock.get("channel_id") or "").strip()
+    if not expected_id:
+        raise AgentError("Missing YouTube channel lock in upload plan.")
+
+    response = youtube.channels().list(part="id,snippet", mine=True).execute()
+    items = response.get("items") or []
+    if not items:
+        raise AgentError("Authenticated YouTube account did not return a channel for mine=true.")
+
+    active = next((item for item in items if item.get("id") == expected_id), None)
+    if not active:
+        seen = ", ".join(item.get("id") or "unknown" for item in items)
+        raise AgentError(
+            "Authenticated YouTube channel does not match the fixed channel lock. "
+            f"Expected {expected_id}, got {seen or 'unknown'}."
+        )
+
+    active_id = active.get("id") or ""
+    snippet = active.get("snippet") or {}
+    active_channel = {
+        "channel_id": active_id,
+        "channel_title": snippet.get("title") or "",
+        "channel_handle": snippet.get("customUrl") or "",
+    }
+    return active_channel
+
+
 def execute_youtube_upload(plan: dict[str, Any]) -> dict[str, Any]:
     from googleapiclient.http import MediaFileUpload
 
     client_secrets = Path(plan["client_secrets"])
     token_file = Path(plan["token_file"])
     youtube = get_youtube_service(client_secrets, token_file, bool(plan["upload_captions"]))
+    active_channel = verify_youtube_channel_lock(youtube, plan.get("channel_lock") or {})
     body = {
         "snippet": {
             "title": plan["title"],
@@ -1476,6 +1594,7 @@ def execute_youtube_upload(plan: dict[str, Any]) -> dict[str, Any]:
         "watch_url": f"https://youtu.be/{video_id}",
         "privacy_status": plan["privacy_status"],
         "caption_id": None,
+        "channel": active_channel,
     }
 
     if plan["upload_captions"] and plan["caption_file"]:
@@ -1510,6 +1629,9 @@ def run_youtube_upload(args: argparse.Namespace) -> int:
     print(f"  title      : {plan['title']}")
     print(f"  visibility : {plan['privacy_status']}")
     print(f"  captions   : {plan['caption_file'] if plan['upload_captions'] else 'not requested'}")
+    lock = plan.get("channel_lock") or {}
+    print(f"  channel id : {lock.get('channel_id') or 'not locked'}")
+    print(f"  user id    : {lock.get('youtube_user_id') or 'not set'}")
     if args.dry_run or not args.approve_upload:
         print("\nDry run only. Add --approve-upload to perform the external YouTube upload.")
         return 0
@@ -1549,6 +1671,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     youtube_doctor = sub.add_parser("youtube-doctor", help="check optional YouTube upload dependencies")
     youtube_doctor.set_defaults(func=run_youtube_doctor)
+
+    youtube_lock = sub.add_parser("youtube-channel-lock", help="set or show the fixed YouTube upload account/channel")
+    youtube_lock.add_argument("--channel-lock-file", type=Path, default=None)
+    youtube_lock.add_argument("--youtube-user-id", default="")
+    youtube_lock.add_argument("--channel-id", default="")
+    youtube_lock.add_argument("--channel-title", default="")
+    youtube_lock.add_argument("--channel-handle", default="")
+    youtube_lock.set_defaults(func=run_youtube_channel_lock)
 
     prepare = sub.add_parser("prepare", help="ingest, analyze, and propose cuts")
     prepare.add_argument("source", help="Zoom recording folder or video file")
@@ -1639,6 +1769,7 @@ def build_parser() -> argparse.ArgumentParser:
     youtube_upload.add_argument("out_dir", help="existing output directory")
     youtube_upload.add_argument("--client-secrets", type=Path, default=None)
     youtube_upload.add_argument("--token-file", type=Path, default=None)
+    youtube_upload.add_argument("--channel-lock-file", type=Path, default=None)
     youtube_upload.add_argument("--privacy-status", choices=["private", "unlisted", "public"], default="private")
     youtube_upload.add_argument("--approve-upload", action="store_true")
     youtube_upload.add_argument("--approve-public", action="store_true")

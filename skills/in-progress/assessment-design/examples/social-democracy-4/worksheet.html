@@ -172,14 +172,14 @@
       </div>
 
       <div class="actions">
-        <button class="btn primary" id="printBtn" type="button">인쇄 / PDF로 제출</button>
+        <button class="btn primary" id="printBtn" type="button">PDF로 저장 (내 컴퓨터)</button>
         <button class="btn ghost" id="clearBtn" type="button">지우기</button>
         <span class="saved" id="saved" hidden>저장됨 ✓</span>
       </div>
     </div>
   </div>
 
-  <p class="foot">※ 쓰던 내용은 이 기기의 브라우저에 자동으로 임시 저장돼요. 다른 기기나 선생님께는 전송되지 않으니, 다 쓰면 <b>인쇄 또는 PDF로 저장해 제출</b>하세요.</p>
+  <p class="foot">※ 쓰던 내용은 이 기기의 브라우저에 자동으로 임시 저장돼요. 다 쓰면 <b>[PDF로 저장]</b>을 누르고, 인쇄 창에서 <b>'대상(프린터)'을 'PDF로 저장'</b>으로 골라 <b>저장</b>을 누르세요. 완성한 평가지가 <b>내 컴퓨터에 PDF 파일</b>로 저장돼요. (파일 이름은 학년반·번호·이름으로 자동 지정됩니다. 저장한 파일은 선생님 안내에 따라 제출하세요.)</p>
 </div>
 
 <script>
@@ -230,7 +230,16 @@
     ids.forEach(function(id){var el=document.getElementById(id);if(!el)return;if(el.type==='checkbox')el.checked=false;else el.value='';});
     grow();
   });
-  window.addEventListener('beforeprint',grow);
+  var ORIG_TITLE=document.title;
+  function printName(){
+    var cls=(document.getElementById('cls').value||'').trim();
+    var no=(document.getElementById('no').value||'').trim();
+    var nm=(document.getElementById('nm').value||'').trim();
+    var parts=['학생자치평가지']; if(cls)parts.push(cls); if(no)parts.push(no+'번'); if(nm)parts.push(nm);
+    return parts.join('_').replace(/\s+/g,'');
+  }
+  window.addEventListener('beforeprint',function(){ grow(); try{document.title=printName();}catch(e){} });
+  window.addEventListener('afterprint',function(){ try{document.title=ORIG_TITLE;}catch(e){} });
   load();
   updateSelf();
 </script>

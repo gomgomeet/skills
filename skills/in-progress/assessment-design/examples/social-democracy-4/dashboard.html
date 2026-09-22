@@ -1,0 +1,337 @@
+<title>학생 자치 채점 대시보드</title>
+<style>
+  :root{
+    --ground:#eef1f5; --card:#ffffff; --ink:#1f242c; --muted:#616873; --line:#dde2e8;
+    --accent:#2f5d8a; --accent-soft:#e6eef6; --focus:#3b7bc0;
+    --good:#1f7a4d; --good-bg:#e2f3ea; --blue:#2f6fb0; --blue-bg:#e5eefa;
+    --amber:#a9701b; --amber-bg:#f7edd9; --red:#b23b3b; --red-bg:#f7e3e3;
+    --ai:#6d4aa7; --ai-bg:#efe8f8;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --ground:#111419; --card:#1a1e25; --ink:#e8eaee; --muted:#98a0ab; --line:#2b313a;
+    --accent:#6fa5d8; --accent-soft:#1e2a38; --focus:#6fa5d8;
+    --good:#5cc08a; --good-bg:#173026; --blue:#78ade6; --blue-bg:#152437;
+    --amber:#d6a24e; --amber-bg:#322815; --red:#e08383; --red-bg:#331d1d;
+    --ai:#b79ae0; --ai-bg:#241a34;
+  }}
+  :root[data-theme="dark"]{
+    --ground:#111419; --card:#1a1e25; --ink:#e8eaee; --muted:#98a0ab; --line:#2b313a;
+    --accent:#6fa5d8; --accent-soft:#1e2a38; --focus:#6fa5d8;
+    --good:#5cc08a; --good-bg:#173026; --blue:#78ade6; --blue-bg:#152437;
+    --amber:#d6a24e; --amber-bg:#322815; --red:#e08383; --red-bg:#331d1d;
+    --ai:#b79ae0; --ai-bg:#241a34;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--ground);color:var(--ink);
+    font-family:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif;line-height:1.55;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .page{max-width:1040px;margin:0 auto;padding:18px 16px 60px;}
+  h1{font-size:19px;margin:0;font-weight:700;}
+  .sub{color:var(--muted);font-size:13px;margin:2px 0 0;}
+  .bar{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px;}
+  .mode{font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:var(--card);}
+  .mode.on{color:var(--good);border-color:var(--good);}
+  .mode.off{color:var(--amber);border-color:var(--amber);}
+  .tiles{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px;}
+  @media (max-width:640px){.tiles{grid-template-columns:repeat(2,1fr);}}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;}
+  .tile .n{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;}
+  .tile .l{font-size:12px;color:var(--muted);margin-top:2px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:16px;}
+  .card h2{margin:0 0 12px;font-size:15px;font-weight:700;}
+  .frow{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+  .field{display:flex;flex-direction:column;gap:3px;}
+  .field.grow{flex:1;min-width:180px;}
+  label.cap{font-size:12px;color:var(--muted);font-weight:600;}
+  input[type=text],textarea{border:1.5px solid var(--line);border-radius:9px;padding:8px 10px;font-family:inherit;
+    font-size:14px;background:var(--card);color:var(--ink);width:100%;}
+  input.sm{width:72px;}
+  textarea{min-height:56px;resize:vertical;}
+  input:focus,textarea:focus{outline:none;border-color:var(--focus);box-shadow:0 0 0 3px var(--accent-soft);}
+  .aibox{border:1.5px dashed var(--ai);background:var(--ai-bg);border-radius:11px;padding:11px 13px;margin:4px 0 12px;}
+  .aibox .row1{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .btn-ai{background:var(--ai);color:#fff;border:none;border-radius:9px;padding:9px 15px;font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;}
+  .ai-status{font-size:12.5px;color:var(--ai);font-weight:600;}
+  .ai-ev{margin-top:9px;font-size:12.5px;display:none;}
+  .ai-ev .evline{display:flex;gap:7px;padding:3px 0;border-top:1px solid var(--line);}
+  .ai-ev .mk{font-weight:700;white-space:nowrap;}
+  .ai-ev .yes{color:var(--good);} .ai-ev .no{color:var(--muted);}
+  .ai-ev .q{color:var(--ink);}
+  .ai-warn{margin-top:8px;font-size:12px;color:var(--red);font-weight:600;}
+  .ai-cmt{margin-top:6px;font-size:12.5px;color:var(--muted);}
+  .marks{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 4px;}
+  .mk-l{display:flex;align-items:center;gap:6px;background:var(--ground);border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer;}
+  .mk-l input{width:16px;height:16px;accent-color:var(--good);}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:8px;}
+  .btn{font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;border-radius:9px;padding:9px 16px;border:1.5px solid var(--accent);}
+  .btn.primary{background:var(--accent);color:#fff;}
+  .btn.ghost{background:transparent;color:var(--accent);}
+  .btn.mini{padding:4px 9px;font-size:12px;border-radius:7px;}
+  .btn.danger{border-color:var(--red);color:var(--red);}
+  .btn:focus-visible,.btn-ai:focus-visible{outline:2px solid var(--focus);outline-offset:2px;}
+  .tablewrap{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:660px;}
+  th,td{border-bottom:1px solid var(--line);padding:8px 8px;text-align:left;vertical-align:top;}
+  th{font-size:12px;color:var(--muted);font-weight:700;white-space:nowrap;}
+  td.c,th.c{text-align:center;white-space:nowrap;}
+  .ans{max-width:220px;font-size:12.5px;}
+  .pill{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px;white-space:nowrap;}
+  .lv4{background:var(--good-bg);color:var(--good);} .lv3{background:var(--blue-bg);color:var(--blue);}
+  .lv2{background:var(--amber-bg);color:var(--amber);} .lv1{background:var(--red-bg);color:var(--red);}
+  .empty{color:var(--muted);font-size:13.5px;padding:18px 4px;text-align:center;}
+  .foot{font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.5;}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;padding:16px;z-index:9;}
+  .modal .inner{background:var(--card);border-radius:12px;padding:16px;max-width:560px;width:100%;}
+  .modal textarea{min-height:200px;font-size:12px;font-family:ui-monospace,monospace;}
+  @media print{
+    body{background:#fff;} .card.form,.actions,.mode,.btn,.btn-ai,.aibox,.foot{display:none !important;}
+    .tile{border:1px solid #999;} table{min-width:0;font-size:11px;} .ans{max-width:none;}
+    @page{size:A4 landscape;margin:10mm;}
+  }
+</style>
+
+<div class="page">
+  <div class="bar">
+    <div>
+      <h1>학생 자치 채점 대시보드</h1>
+      <p class="sub">4학년 사회 · 민주주의와 자치 [4사08-01] · AI가 제안하고, 선생님이 확정합니다.</p>
+    </div>
+    <span class="mode" id="mode">연결 확인 중…</span>
+  </div>
+
+  <div class="tiles">
+    <div class="tile"><div class="n" id="t-total">0</div><div class="l">전체 인원</div></div>
+    <div class="tile"><div class="n" id="t-4">0</div><div class="l">매우잘함</div></div>
+    <div class="tile"><div class="n" id="t-3">0</div><div class="l">잘함</div></div>
+    <div class="tile"><div class="n" id="t-2">0</div><div class="l">보통</div></div>
+    <div class="tile"><div class="n" id="t-1">0</div><div class="l">노력요함</div></div>
+  </div>
+
+  <div class="card form">
+    <h2 id="formTitle">학생 채점 입력</h2>
+    <div class="frow">
+      <div class="field"><label class="cap">학년·반</label><input type="text" id="f-cls" class="sm" placeholder="4-1" style="width:80px"></div>
+      <div class="field"><label class="cap">번호</label><input type="text" id="f-no" class="sm" placeholder="1"></div>
+      <div class="field grow"><label class="cap">이름(선택)</label><input type="text" id="f-name" placeholder="번호만 써도 됩니다"></div>
+    </div>
+    <div class="frow">
+      <div class="field grow"><label class="cap">1번 · 참여 사례 (학생 답 붙여넣기)</label><textarea id="f-q1" placeholder="학생이 찾은 참여 사례"></textarea></div>
+      <div class="field grow"><label class="cap">2번 · 내 말로 쓰기 (학생 답 붙여넣기)</label><textarea id="f-q2" placeholder="학생이 자기 말로 쓴 문장"></textarea></div>
+    </div>
+
+    <div class="aibox" id="aibox">
+      <div class="row1">
+        <button class="btn-ai" id="aiBtn" type="button">🤖 AI 채점 제안</button>
+        <button class="btn ghost mini" id="aiStop" type="button" style="display:none">중지</button>
+        <span class="ai-status" id="aiStatus"></span>
+      </div>
+      <div class="ai-ev" id="aiEv"></div>
+      <div class="ai-cmt" id="aiCmt"></div>
+      <div class="ai-warn" id="aiWarn" style="display:none">※ AI 제안입니다. 학생 답과 기사를 직접 확인해 아래 체크를 고친 뒤 저장하세요. 최종 판단은 선생님이 합니다.</div>
+    </div>
+
+    <label class="cap">채점 (AI 제안 → 선생님이 확인·수정)</label>
+    <div class="marks">
+      <label class="mk-l"><input type="checkbox" id="m-ga">㉠ 참여한 사람</label>
+      <label class="mk-l"><input type="checkbox" id="m-na">㉡ 참여한 행동</label>
+      <label class="mk-l"><input type="checkbox" id="m-ma">㉮ 바꿔 쓰기</label>
+      <label class="mk-l"><input type="checkbox" id="m-ja">㉯ 내용 드러남</label>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="saveBtn" type="button">저장 (확정)</button>
+      <button class="btn ghost" id="resetBtn" type="button">새로 입력</button>
+      <span class="sub" id="calcPreview"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">채점 결과
+      <span>
+        <button class="btn ghost mini" id="csvBtn" type="button">CSV 내보내기</button>
+        <button class="btn ghost mini" id="printBtn" type="button">인쇄 / PDF</button>
+      </span>
+    </h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr>
+          <th class="c">반</th><th class="c">번호</th><th>이름</th>
+          <th>1번 · 참여 사례</th><th>2번 · 내 말로</th>
+          <th class="c">㉠</th><th class="c">㉡</th><th class="c">㉮</th><th class="c">㉯</th>
+          <th class="c">사례</th><th class="c">쓰기</th><th class="c">수준</th><th class="c"></th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="empty">아직 입력한 학생이 없습니다. 위에 학생 답을 넣고 <b>AI 채점 제안</b>을 눌러 보세요.</div>
+    <p class="foot">기준: ㉠ 참여한 사람 · ㉡ 참여한 행동 · ㉮ 바꿔 쓰기(베낀 문장 없음+바꾼 낱말 1개↑) · ㉯ 내용 드러남(누가+한 일). 사례=㉠㉡ 합(0~2), 쓰기=㉮㉯ 합(0~2). 수준=네 표시 중 4→매우잘함, 3→잘함, 2→보통, 1이하→노력요함.</p>
+  </div>
+</div>
+
+<div class="modal" id="csvModal"><div class="inner">
+  <h2 style="margin:0 0 8px;font-size:15px">CSV 복사</h2>
+  <p class="sub" style="margin-bottom:8px">파일 저장이 지원되지 않아 텍스트로 보여드립니다. 전체 선택해 복사한 뒤 엑셀에 붙여넣으세요.</p>
+  <textarea id="csvText" readonly></textarea>
+  <div class="actions"><button class="btn primary" id="csvClose" type="button">닫기</button></div>
+</div></div>
+
+<script>
+var ARTICLE=[
+"신탄진중학교는 참여와 실천 중심의 민주시민 역량 함양을 위해 학생회(STEP)를 중심으로 다양한 활동을 운영한다.",
+"학생회 안에 '학생 토론 동아리'를 조직해 학생 스스로 의제를 발굴하고 사업을 기획하는 체계를 구축했다. 학생참여예산제를 활용해 공공 예산의 기획부터 집행까지 전 과정을 학생들이 주도한다.",
+"4월 학생회 리더십 캠프에서 1분 스피치, 토론 교육, 팀워크 미션, 부서별 사업 계획 수립을 했고, 1년간 추진할 활동을 부서별로 기획하고 필요한 예산을 항목별로 산출·배정해 보았다.",
+"5월 어버이날 '효 ON!' 프로젝트로 감사 편지 쓰기, 떡 카네이션 제작, 마을 어르신 방문을 했다.",
+"스승의 날에는 편지 쓰기, 부채 제작 등을 했고 필요한 물품은 학생들이 작성한 예산안에 따라 구매했으며, 이후 설문조사로 효과를 점검했다.",
+"6월 입학 100일 축하 행사(영상 제작, 환영식, 퀴즈 등)를 학생참여예산제로 진행했다.",
+"7월 '물총ON, 우정UP!' 행사는 학생회와 방송반이 함께 운영하며 규칙 만들기, 안전교육 영상 제작, 물품 배부 등 모든 과정을 학생들이 주도했다. 학생들은 규칙을 스스로 정하고 물총 사용 제한 사항까지 설계했다.",
+"학생들은 예산의 기획-심의-집행-평가 전 과정을 경험하며 학교 운영에 참여하고 있다."
+].join("\n");
+
+var F=['cls','no','name','q1','q2'], M=['ga','na','ma','ja'];
+var LKEY='jachi-dashboard-v1';
+var db=null, sampler=null, dl=null, records=[], editId=null, aiCtl=null;
+
+function levelOf(c){return c>=4?4:c===3?3:c===2?2:1;}
+function levelName(l){return l===4?'매우잘함':l===3?'잘함':l===2?'보통':'노력요함';}
+function calc(r){var c=(r.ga?1:0)+(r.na?1:0)+(r.ma?1:0)+(r.ja?1:0);return{e1:(r.ga?1:0)+(r.na?1:0),e2:(r.ma?1:0)+(r.ja?1:0),cnt:c,lv:levelOf(c)};}
+function esc(s){return (s==null?'':String(s)).replace(/[&<>]/g,function(m){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[m];});}
+function gv(id){return document.getElementById(id);}
+
+function readForm(){var r={};F.forEach(function(k){r[k]=gv('f-'+k).value.trim();});M.forEach(function(k){r[k]=gv('m-'+k).checked;});return r;}
+function fillForm(r){F.forEach(function(k){gv('f-'+k).value=r&&r[k]!=null?r[k]:'';});M.forEach(function(k){gv('m-'+k).checked=!!(r&&r[k]);});preview();}
+function preview(){var r=readForm(),c=calc(r);gv('calcPreview').textContent='→ 사례 '+c.e1+'점 · 쓰기 '+c.e2+'점 · '+levelName(c.lv);}
+function resetForm(){editId=null;gv('formTitle').textContent='학생 채점 입력';fillForm(null);gv('aiEv').style.display='none';gv('aiCmt').textContent='';gv('aiWarn').style.display='none';gv('aiStatus').textContent='';}
+
+/* ---- AI 채점 제안 ---- */
+function buildPrompt(q1,q2){
+  return "당신은 초등 4학년 사회 수행평가 채점을 돕는 보조입니다. 최종 점수는 교사가 정합니다. 당신은 제안만 합니다.\n"+
+  "아래 [기사]와 [학생 답]을 읽고, 다음 네 기준이 학생 답에 실제로 나타나는지만 판정하세요. 학생이 쓰지 않은 내용을 추론하거나 더하지 마세요. 근거는 반드시 학생 답에서 그대로 인용하고, 없으면 빈 문자열로 두세요.\n"+
+  "㉠ 참여한 사람: 누가 참여했는지(학생·주민·시민 등)가 학생 답에 있는가.\n"+
+  "㉡ 참여한 행동: 그들이 한 참여 행동(예산 짜기·규칙 만들기·회의·기획·봉사 등)이 있고, 그 행동이 기사에 실제로 나오는가.\n"+
+  "㉮ 바꿔 쓰기: 학생이 기사의 한 문장을 통째로 베끼지 않았고(기사와 똑같은 문장이 없음) + 기사에 없던 자기 낱말이 1개 이상 있는가.\n"+
+  "㉯ 내용 드러남: 학생 답 문장에 '누가'와 '무엇을 했다'가 함께 들어 있어 무슨 일인지 알 수 있는가.\n\n"+
+  "[기사]\n"+ARTICLE+"\n\n[학생 답]\n1번(참여 사례): "+(q1||"(비어 있음)")+"\n2번(내 말로): "+(q2||"(비어 있음)")+"\n\n"+
+  '다음 JSON만 출력하세요: {"ga":true,"na":true,"ma":true,"ja":true,"evidence":{"ga":"학생 답 인용","na":"","ma":"","ja":""},"comment":"교사에게 한 줄 참고"}';
+}
+async function aiScore(){
+  if(!sampler){return;}
+  var r=readForm();
+  if(!r.q1 && !r.q2){alert('먼저 학생 답(1번·2번)을 넣어 주세요.');return;}
+  aiCtl=new AbortController();
+  gv('aiBtn').disabled=true; gv('aiStop').style.display='inline-block';
+  gv('aiStatus').textContent='AI가 학생 답을 읽는 중…'; gv('aiWarn').style.display='none'; gv('aiEv').style.display='none'; gv('aiCmt').textContent='';
+  try{
+    var out=await sampler.json(buildPrompt(r.q1,r.q2),{signal:aiCtl.signal,modelTier:'default'});
+    ['ga','na','ma','ja'].forEach(function(k){gv('m-'+k).checked=!!out[k];});
+    var ev=out.evidence||{};
+    var labels={ga:'㉠ 참여한 사람',na:'㉡ 참여한 행동',ma:'㉮ 바꿔 쓰기',ja:'㉯ 내용 드러남'};
+    var html='';
+    ['ga','na','ma','ja'].forEach(function(k){
+      var on=!!out[k];
+      html+='<div class="evline"><span class="mk '+(on?'yes':'no')+'">'+(on?'●':'○')+' '+labels[k]+'</span>'+
+        '<span class="q">'+(ev[k]?('“'+esc(ev[k])+'”'):'<span class="no">근거 없음</span>')+'</span></div>';
+    });
+    gv('aiEv').innerHTML=html; gv('aiEv').style.display='block';
+    gv('aiCmt').textContent=out.comment?('참고: '+out.comment):'';
+    gv('aiWarn').style.display='block';
+    gv('aiStatus').textContent='AI 제안 완료 — 확인 후 저장하세요.';
+    preview();
+  }catch(e){
+    var code=e&&e.code||'';
+    var msg=code==='not_granted'?'AI 사용이 허용되지 않았습니다(직접 채점하세요).':
+            code==='rate_limited'?'요청이 많습니다. 잠시 후 다시 시도하세요.':
+            code==='cancelled'?'중지했습니다.':
+            code==='invalid_json'?'AI 응답을 읽지 못했습니다. 다시 시도해 주세요.':'AI 채점을 불러오지 못했습니다.';
+    gv('aiStatus').textContent=msg;
+  }finally{
+    gv('aiBtn').disabled=false; gv('aiStop').style.display='none'; aiCtl=null;
+  }
+}
+
+/* ---- 저장/목록 ---- */
+function sortRecs(a,b){return (a.cls||'').localeCompare(b.cls||'')||(parseInt(a.no||0)-parseInt(b.no||0))||(a.ts||0)-(b.ts||0);}
+function render(){
+  records.sort(sortRecs);
+  var tb=gv('rows');tb.innerHTML='';var dist={1:0,2:0,3:0,4:0};
+  records.forEach(function(r){
+    var c=calc(r);dist[c.lv]++;
+    var tr=document.createElement('tr');
+    tr.innerHTML='<td class="c">'+esc(r.cls)+'</td><td class="c">'+esc(r.no)+'</td><td>'+esc(r.name)+'</td>'+
+      '<td class="ans">'+esc(r.q1)+'</td><td class="ans">'+esc(r.q2)+'</td>'+
+      '<td class="c">'+(r.ga?'●':'○')+'</td><td class="c">'+(r.na?'●':'○')+'</td><td class="c">'+(r.ma?'●':'○')+'</td><td class="c">'+(r.ja?'●':'○')+'</td>'+
+      '<td class="c">'+c.e1+'</td><td class="c">'+c.e2+'</td><td class="c"><span class="pill lv'+c.lv+'">'+levelName(c.lv)+'</span></td>'+
+      '<td class="c"><button class="btn ghost mini" data-edit="'+r.id+'">수정</button> <button class="btn danger mini" data-del="'+r.id+'">삭제</button></td>';
+    tb.appendChild(tr);
+  });
+  gv('empty').style.display=records.length?'none':'block';
+  gv('t-total').textContent=records.length;gv('t-4').textContent=dist[4];gv('t-3').textContent=dist[3];gv('t-2').textContent=dist[2];gv('t-1').textContent=dist[1];
+}
+function localSave(){try{localStorage.setItem(LKEY,JSON.stringify(records));}catch(e){}}
+function localLoad(){try{records=JSON.parse(localStorage.getItem(LKEY)||'[]');}catch(e){records=[];}}
+
+async function save(){
+  var r=readForm();
+  if(!r.no && !r.name){alert('번호나 이름을 입력하세요.');return;}
+  var body={cls:r.cls,no:r.no,name:r.name,q1:r.q1,q2:r.q2,ga:r.ga,na:r.na,ma:r.ma,ja:r.ja,ts:Date.now()};
+  if(db){
+    try{ if(editId){await db.collection('records').doc(editId).set(body);} else{await db.collection('records').add(body);} }
+    catch(e){alert('저장 실패: '+(e&&e.code||e));return;}
+  }else{
+    if(editId){var i=records.findIndex(function(x){return x.id===editId;});if(i>-1)records[i]=Object.assign({id:editId},body);}
+    else{records.push(Object.assign({id:'r'+Date.now()+Math.random().toString(36).slice(2,6)},body));}
+    localSave();render();
+  }
+  resetForm();
+}
+async function del(id){
+  if(!confirm('이 학생 기록을 삭제할까요?'))return;
+  if(db){try{await db.collection('records').doc(id).delete();}catch(e){alert('삭제 실패: '+(e&&e.code||e));}}
+  else{records=records.filter(function(x){return x.id!==id;});localSave();render();}
+  if(editId===id)resetForm();
+}
+function startEdit(id){var r=records.find(function(x){return x.id===id;});if(!r)return;editId=id;gv('formTitle').textContent='학생 채점 수정';fillForm(r);window.scrollTo({top:0,behavior:'smooth'});}
+
+/* ---- CSV ---- */
+function buildCsv(){
+  var head=['반','번호','이름','1번(참여 사례)','2번(내 말로)','㉠','㉡','㉮','㉯','사례점수','쓰기점수','수준'];
+  var lines=[head];
+  records.slice().sort(sortRecs).forEach(function(r){var c=calc(r);
+    lines.push([r.cls,r.no,r.name,r.q1,r.q2,r.ga?'O':'X',r.na?'O':'X',r.ma?'O':'X',r.ja?'O':'X',c.e1,c.e2,levelName(c.lv)]);});
+  return '﻿'+lines.map(function(row){return row.map(function(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"';}).join(',');}).join('\r\n');
+}
+async function exportCsv(){
+  if(!records.length){alert('내보낼 기록이 없습니다.');return;}
+  var csv=buildCsv();
+  if(dl){
+    try{ await dl.save({filename:'채점결과.csv',data:csv}); return; }
+    catch(e){ if(e&&e.code==='declined')return; }
+  }
+  gv('csvText').value=csv; gv('csvModal').style.display='flex'; gv('csvText').select();
+}
+
+/* ---- wire ---- */
+gv('saveBtn').addEventListener('click',save);
+gv('resetBtn').addEventListener('click',resetForm);
+gv('printBtn').addEventListener('click',function(){window.print();});
+gv('csvBtn').addEventListener('click',exportCsv);
+gv('csvClose').addEventListener('click',function(){gv('csvModal').style.display='none';});
+gv('aiBtn').addEventListener('click',aiScore);
+gv('aiStop').addEventListener('click',function(){if(aiCtl)aiCtl.abort();});
+document.querySelector('.card.form').addEventListener('input',function(e){if(e.target.id&&(e.target.id.indexOf('f-')===0||e.target.id.indexOf('m-')===0))preview();});
+gv('rows').addEventListener('click',function(e){var t=e.target;if(t.dataset.edit)startEdit(t.dataset.edit);else if(t.dataset.del)del(t.dataset.del);});
+
+function setMode(on){var m=gv('mode');if(on){m.className='mode on';m.textContent='● 온라인 저장 (조직 공유)';}else{m.className='mode off';m.textContent='○ 이 기기에만 저장 (오프라인)';}}
+
+(async function init(){
+  resetForm();
+  try{ sampler = window.claude&&claude.use ? await claude.use('sample') : null; }catch(e){ sampler=null; }
+  try{ dl = window.claude&&claude.use ? await claude.use('downloads') : null; }catch(e){ dl=null; }
+  if(!sampler){ gv('aibox').style.display='none'; }
+  try{ db = window.claude&&claude.use ? await claude.use('db') : null; }catch(e){ db=null; }
+  if(db){
+    setMode(true);
+    db.collection('records').onSnapshot(function(snap){
+      records=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});render();
+    },function(err){ setMode(false); localLoad(); render(); });
+  }else{ setMode(false); localLoad(); render(); }
+})();
+</script>

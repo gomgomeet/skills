@@ -1,0 +1,199 @@
+<title>민주주의 평가기준안</title>
+<style>
+  :root{
+    --desk:#e7e9ee;
+    --sheet:#ffffff;
+    --ink:#1f2329;
+    --muted:#5c626c;
+    --line:#565c65;
+    --line-soft:#9aa0a9;
+    --label-bg:#eef0f3;
+    --band-bg:#dde1e7;
+    --accent:#2f4b7c;
+    --note:#8a5a2b;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --desk:#15171b;
+      --muted:#565c66;
+    }
+  }
+  :root[data-theme="dark"]{
+    --desk:#15171b;
+    --muted:#565c66;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background:var(--desk);
+    font-family:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+    color:var(--ink);line-height:1.5;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;
+  }
+  .toolbar{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    max-width:860px;margin:0 auto;padding:14px 16px;flex-wrap:wrap;
+  }
+  .toolbar h1{font-size:15px;font-weight:700;margin:0;color:var(--ink);letter-spacing:.02em;}
+  .toolbar .sub{color:var(--muted);font-weight:400;font-size:12.5px;}
+  .btn{
+    font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;
+    background:var(--accent);color:#fff;border:none;border-radius:7px;
+    padding:8px 16px;
+  }
+  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  .wrap{padding:0 16px 40px;}
+  .sheet{
+    max-width:860px;margin:0 auto;background:var(--sheet);color:var(--ink);
+    padding:26px 30px 34px;border:1px solid var(--line-soft);
+    box-shadow:0 6px 24px rgba(0,0,0,.16);
+  }
+  .doc-title{
+    text-align:center;font-size:21px;font-weight:700;letter-spacing:.16em;
+    margin:2px 0 14px;text-wrap:balance;
+  }
+  .doc-meta{display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;margin-bottom:8px;}
+  table{width:100%;border-collapse:collapse;table-layout:auto;}
+  td{border:1px solid var(--line);padding:7px 9px;font-size:13px;vertical-align:middle;}
+  .lbl{
+    background:var(--label-bg);font-weight:700;text-align:center;
+    white-space:nowrap;color:var(--ink);width:1%;
+  }
+  .band{
+    background:var(--band-bg);font-weight:700;text-align:center;
+    letter-spacing:.28em;padding:6px;
+  }
+  .val{text-align:left;}
+  .center{text-align:center;}
+  ul.pt{margin:0;padding-left:17px;}
+  ul.pt li{margin:2px 0;}
+  .lv{font-weight:700;text-align:center;white-space:nowrap;background:var(--label-bg);}
+  .num{font-weight:700;text-align:center;background:var(--label-bg);width:26px;font-size:14px;}
+  .score{font-weight:700;text-align:center;white-space:nowrap;width:1%;font-variant-numeric:tabular-nums;}
+  .ex em{color:var(--accent);font-style:normal;font-weight:700;}
+  .note{
+    max-width:860px;margin:12px auto 0;font-size:12px;color:var(--note);
+    padding:0 2px;line-height:1.55;
+  }
+  .stack{margin-top:0;}
+  .stack table + table{border-top:none;}
+  @media (max-width:520px){
+    .sheet{padding:18px 14px 24px;}
+    .doc-title{font-size:17px;letter-spacing:.1em;}
+    td{padding:6px 7px;font-size:12px;}
+  }
+  @media print{
+    body{background:#fff;}
+    .toolbar,.note-screen{display:none;}
+    .wrap{padding:0;}
+    .sheet{max-width:none;width:100%;border:none;box-shadow:none;padding:0;}
+    @page{size:A4;margin:12mm;}
+  }
+</style>
+
+<div class="toolbar">
+  <h1>사회 수행평가 기준안 <span class="sub">· 4학년 2학기 · 민주주의와 자치</span></h1>
+  <button class="btn" id="printBtn" type="button">인쇄 / PDF 저장</button>
+</div>
+
+<div class="wrap">
+  <div class="sheet">
+    <div class="doc-meta"><span>2025학년도</span><span>4학년 2학기</span></div>
+    <div class="doc-title">사회 수행평가 기준안</div>
+
+    <div class="stack">
+    <table>
+      <colgroup><col style="width:96px"><col><col style="width:80px"><col style="width:70px"></colgroup>
+      <tbody>
+        <tr>
+          <td class="lbl">단원명</td>
+          <td class="val">8. 민주주의와 자치</td>
+          <td class="lbl">평가시기</td>
+          <td class="center">○월</td>
+        </tr>
+        <tr>
+          <td class="lbl">평가요소</td>
+          <td class="val" colspan="3">신문기사를 읽고 참여 사례를 찾아 자기 말로 쓰기</td>
+        </tr>
+        <tr>
+          <td class="lbl">성취기준</td>
+          <td class="val" colspan="3">[4사08-01] 학교 자치 사례를 통하여 민주주의의 의미를 이해하고, 학교생활에서 민주주의를 실천하는 능력을 기른다.</td>
+        </tr>
+        <tr>
+          <td class="lbl">영역</td>
+          <td class="center">정치</td>
+          <td class="lbl">평가유형</td>
+          <td class="center">서술형</td>
+        </tr>
+        <tr>
+          <td class="lbl">준비물</td>
+          <td class="val" colspan="3">신문기사 활동지, 필기구 &nbsp;/&nbsp; 대상: 개인</td>
+        </tr>
+        <tr>
+          <td class="lbl">수업·평가<br>주안점</td>
+          <td class="val" colspan="3">
+            <ul class="pt">
+              <li>신문기사(신탄진중 학생회·학생 자치 사례)를 함께 읽고, 기사 속에서 '학생들이 참여한 일(참여 사례)'을 찾도록 안내한다.</li>
+              <li>찾은 사례를 기사 문장 그대로 베끼지 않고, <strong>자기 말로 바꿔</strong> 쓰도록 지도한다.</li>
+              <li>4학년 수준을 고려해 '왜 중요한가'보다 <strong>'무슨 일이 있었는지 이해'</strong>에 초점을 둔다. 기사에 어려운 낱말(예산·심의·자치 등)이 많으므로 함께 풀어 읽어 준다.</li>
+              <li>성취기준의 '학교생활에서 민주주의를 실천하는 능력'은 본 차시 평가 범위가 아니며 별도 차시에서 다룬다. <strong>(가르치지 않은 것은 평가하지 않는다.)</strong></li>
+            </ul>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table>
+      <colgroup><col style="width:96px"><col></colgroup>
+      <tbody>
+        <tr><td class="band" colspan="2">평 가 기 준</td></tr>
+        <tr><td class="val" colspan="2" style="background:var(--label-bg);font-size:12px;line-height:1.7;">
+          ※ <strong>기사와 학생 글을 나란히 놓고</strong>, 아래 네 가지가 보이는지 센다.<br>
+          <strong>[사례 찾기]</strong> &nbsp;㉠ <strong>참여한 사람</strong>: 누가 참여했는지(학생·주민·시민 등)가 있다. &nbsp;㉡ <strong>참여한 행동</strong>: 그들이 한 참여 행동(예산 짜기·규칙 만들기·회의·기획·봉사 등)이 있고, 기사에 실제 나온 내용이다.<br>
+          <strong>[자기 말로 쓰기]</strong> &nbsp;㉮ <strong>바꿔 쓰기</strong>: 통째로 베낀 문장이 없다 + 기사에 없던 낱말이 1개 이상 있다. &nbsp;㉯ <strong>내용 드러남</strong>: 문장에 '누가'와 '무엇을 했다'가 있다.
+        </td></tr>
+        <tr><td class="lv">매우잘함</td><td class="val">네 가지(㉠·㉡·㉮·㉯)를 <strong>모두</strong> 갖췄다.</td></tr>
+        <tr><td class="lv">잘함</td><td class="val">네 가지 중 <strong>3가지</strong>를 갖췄다.</td></tr>
+        <tr><td class="lv">보통</td><td class="val">네 가지 중 <strong>2가지</strong>를 갖췄다.</td></tr>
+        <tr><td class="lv">노력요함</td><td class="val">갖춘 것이 <strong>1가지 이하</strong>이거나, 참여 사례를 찾지 못했다.</td></tr>
+      </tbody>
+    </table>
+
+    <table>
+      <colgroup><col style="width:26px"><col style="width:78px"><col style="width:44px"><col></colgroup>
+      <tbody>
+        <tr><td class="band" colspan="4">예 시 답 안</td></tr>
+
+        <tr>
+          <td class="num" rowspan="4">①</td>
+          <td class="lbl">예시 답안</td>
+          <td class="val ex" colspan="2">(기사에서) → 찾은 참여 사례: <em>학생들(㉠)</em>이 <em>학생참여예산제로 예산을 직접 짜서 학교 행사를 열었다(㉡).</em><br><span style="color:var(--muted)">다른 예: 학생들이 물총놀이 규칙을 스스로 만듦 / 학생회가 어버이날 프로젝트를 기획함</span></td>
+        </tr>
+        <tr>
+          <td class="lbl" rowspan="3">채점 기준<br><span style="font-weight:400">(사례 찾기)</span></td>
+          <td class="score">2점</td><td class="val"><strong>㉠·㉡을 모두</strong> 씀 (참여한 사람 + 참여 행동, 기사에 나온 내용)</td>
+        </tr>
+        <tr><td class="score">1점</td><td class="val"><strong>㉠·㉡ 중 하나만</strong> 쓰거나, 참여와 관련 없는 내용이 섞임</td></tr>
+        <tr><td class="score">0점</td><td class="val">참여 사례가 아니거나(기사에 없는 내용), 사례를 찾지 못함</td></tr>
+
+        <tr>
+          <td class="num" rowspan="4">②</td>
+          <td class="lbl">예시 답안</td>
+          <td class="val ex" colspan="2">기사 문장: "공공 예산의 기획부터 집행까지의 전 과정을 학생들이 주도함으로써…"<br>→ 자기 말 예시: "학교 <em>학생들이 돈을 어디에 쓸지 직접 정하고</em> 행사를 열었다." <span style="color:var(--muted)">(바꾼 낱말: 공공 예산→돈, 기획부터 집행까지 주도→직접 정함)</span></td>
+        </tr>
+        <tr>
+          <td class="lbl" rowspan="3">채점 기준<br><span style="font-weight:400">(자기 말로<br>바꿔 쓰기)</span></td>
+          <td class="score">2점</td><td class="val"><strong>㉮·㉯를 모두</strong> 갖춤 (베낀 문장 없음 + 바꾼 낱말 1개 이상 + '누가·한 일' 드러남)</td>
+        </tr>
+        <tr><td class="score">1점</td><td class="val"><strong>㉮·㉯ 중 하나만</strong> 갖춤</td></tr>
+        <tr><td class="score">0점</td><td class="val"><strong>둘 다 못 갖춤</strong> — 기사 문장을 통째로 옮겨 씀</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <p class="note note-screen">※ 예시 답안은 제시 기사(신탄진중 학생 자치 사례, 충청뉴스)를 기준으로 합니다. 이 기사는 중학교 사례라 낱말이 다소 어려우니, 4학년 수준에 맞게 함께 풀어 읽거나 기사 일부만 발췌해 쓰세요. 성취기준 문장은 2022 개정 교육과정(교육부 고시) 원문입니다.</p>
+</div>
+
+<script>
+  document.getElementById('printBtn').addEventListener('click', function(){ window.print(); });
+</script>

@@ -1,0 +1,303 @@
+<title>학생 자치 평가지</title>
+<style>
+  :root{
+    --ground:#e9eef2; --card:#ffffff; --ink:#20242b; --muted:#5d636d;
+    --line:#d9dfe5; --accent:#1f7a8c; --accent-ink:#0f4a56; --accent-soft:#e2f1f4;
+    --good:#2e7d55; --focus:#2b8a9e;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --ground:#12151a; --card:#1b1f26; --ink:#e9ebee; --muted:#9aa1ab;
+      --line:#2c313a; --accent:#5fb7c8; --accent-ink:#bfe6ee; --accent-soft:#203037;
+      --good:#66c091; --focus:#5fb7c8;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#12151a; --card:#1b1f26; --ink:#e9ebee; --muted:#9aa1ab;
+    --line:#2c313a; --accent:#5fb7c8; --accent-ink:#bfe6ee; --accent-soft:#203037;
+    --good:#66c091; --focus:#5fb7c8;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background:var(--ground);color:var(--ink);
+    font-family:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+    line-height:1.6;-webkit-print-color-adjust:exact;print-color-adjust:exact;
+  }
+  .page{max-width:960px;margin:0 auto;padding:20px 16px 60px;}
+  header.hd{
+    background:linear-gradient(135deg,var(--accent),var(--accent-ink));
+    color:#fff;border-radius:16px;padding:20px 22px;margin-bottom:16px;
+  }
+  header.hd .eyebrow{font-size:12.5px;letter-spacing:.14em;opacity:.9;font-weight:500;}
+  header.hd h1{margin:4px 0 6px;font-size:23px;font-weight:700;text-wrap:balance;}
+  header.hd p{margin:0;font-size:13.5px;opacity:.95;}
+  .idrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;}
+  .idrow label{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.16);
+    padding:6px 10px;border-radius:9px;font-size:13px;font-weight:500;}
+  .idrow input{border:none;border-radius:6px;padding:5px 8px;font-family:inherit;
+    font-size:13px;width:90px;background:#fff;color:#20242b;}
+  .grid{display:grid;grid-template-columns:1.05fr 1fr;gap:16px;align-items:start;}
+  @media (max-width:760px){.grid{grid-template-columns:1fr;}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;}
+  .card h2{margin:0 0 4px;font-size:15px;font-weight:700;display:flex;align-items:center;gap:7px;}
+  .badge{background:var(--accent);color:#fff;font-size:12px;font-weight:700;border-radius:999px;
+    width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;flex:none;}
+  .article-col{position:sticky;top:env(safe-area-inset-top,10px);}
+  @media (max-width:760px){.article-col{position:static;}}
+  .article{max-height:60vh;overflow:auto;font-size:13px;color:var(--ink);padding-right:6px;}
+  .article h3{font-size:13.5px;margin:14px 0 4px;color:var(--accent-ink);}
+  .article p{margin:6px 0;}
+  .src{font-size:11.5px;color:var(--muted);margin-top:10px;}
+  .glossary{margin-top:12px;background:var(--accent-soft);border-radius:10px;padding:10px 12px;font-size:12.5px;}
+  .glossary b{color:var(--accent-ink);}
+  .glossary dt{font-weight:700;margin-top:4px;}
+  .glossary dd{margin:0 0 2px;color:var(--muted);}
+  .hint{font-size:12.5px;color:var(--muted);margin:2px 0 8px;}
+  textarea{
+    width:100%;min-height:96px;resize:vertical;border:1.5px solid var(--line);border-radius:10px;
+    padding:10px 12px;font-family:inherit;font-size:14px;line-height:1.6;background:var(--card);color:var(--ink);
+  }
+  textarea:focus{outline:none;border-color:var(--focus);box-shadow:0 0 0 3px var(--accent-soft);}
+  .check{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:8px;}
+  .check li{display:flex;gap:9px;align-items:flex-start;font-size:13.5px;background:var(--ground);
+    border-radius:9px;padding:8px 10px;}
+  .check input{width:18px;height:18px;margin-top:2px;flex:none;accent-color:var(--good);}
+  .selfview{margin-top:10px;font-size:13.5px;font-weight:600;padding:10px 12px;border-radius:10px;background:var(--accent-soft);color:var(--accent-ink);display:none;}
+  .selfview .miss{display:block;font-weight:500;color:var(--muted);margin-top:3px;font-size:12.5px;}
+  .formcta{display:inline-block;background:#1a73e8;color:#fff;text-decoration:none;font-weight:700;border-radius:10px;padding:13px 20px;font-size:15.5px;box-shadow:0 2px 8px rgba(26,115,232,.3);}
+  .formcta:hover{background:#155ec4;}
+  .formbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:2px 0 16px;}
+  .formbar .msg{font-size:12.5px;color:var(--muted);}
+  .copybtn{margin-top:8px;font-size:12.5px;padding:6px 12px;border-radius:8px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-family:inherit;font-weight:600;cursor:pointer;}
+  .copybtn:hover{background:var(--accent-soft);}
+  .copybtn:focus-visible{outline:2px solid var(--focus);outline-offset:2px;}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center;}
+  .btn{font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;border-radius:10px;padding:10px 18px;border:1.5px solid var(--accent);}
+  .btn.primary{background:var(--accent);color:#fff;}
+  .btn.ghost{background:transparent;color:var(--accent);}
+  .btn:focus-visible{outline:2px solid var(--focus);outline-offset:2px;}
+  .saved{font-size:12.5px;color:var(--good);font-weight:600;}
+  .foot{font-size:12px;color:var(--muted);margin-top:18px;line-height:1.55;}
+  .print-title{display:none;}
+  @media print{
+    body{background:#fff;}
+    .page{max-width:none;padding:0;}
+    header.hd{background:none;color:#000;border:none;padding:0 0 6px;border-bottom:2px solid #000;border-radius:0;}
+    header.hd .eyebrow{color:#000;opacity:1;}
+    .idrow input{border-bottom:1px solid #000;border-radius:0;}
+    .grid{display:block;}
+    .article-col,.glossary,.actions,.hint,.foot{display:none !important;}
+    .card{border:1px solid #999;border-radius:0;margin-bottom:10px;break-inside:avoid;}
+    textarea{border:1px solid #999;min-height:70px;}
+    @page{size:A4;margin:14mm;}
+  }
+</style>
+
+<div class="page">
+  <header class="hd">
+    <div class="eyebrow">4학년 사회 · 민주주의와 자치</div>
+    <h1>학생 자치, 참여를 찾아라!</h1>
+    <p>신문기사를 읽고, 학생들이 <b>참여한 일</b>을 찾아 <b>내 의견</b>을 써 봐요.</p>
+    <div class="idrow">
+      <label>학년·반 <input id="cls" placeholder="4-1"></label>
+      <label>번호 <input id="no" placeholder="1" style="width:56px"></label>
+      <label>이름 <input id="nm" placeholder="이름"></label>
+    </div>
+  </header>
+
+  <div class="formbar">
+    <a class="formcta" href="PASTE_YOUR_GOOGLE_FORM_VIEWFORM_URL_HERE" target="_blank" rel="noopener">✍️ 구글 폼에서 답 제출하기 →</a>
+    <span class="msg">기사는 아래에서 읽고, <b>답은 구글 폼에 제출</b>하세요. (이 화면의 답 칸은 연습용이에요.)</span>
+  </div>
+
+  <div class="grid">
+    <div class="article-col">
+      <div class="card">
+        <h2>📰 신문기사 읽기</h2>
+        <div class="article" id="article">
+          <p>[충청뉴스 이성현 기자] 신탄진중학교는 대전시교육청이 추진하는 '2025학년도 미래시민교육' 핵심 가치인 참여와 실천 중심의 민주시민 역량 함양을 위해 학생회(STEP)를 중심으로 다양한 활동을 운영하고 있다.</p>
+          <p>특히 신탄진중학교는 학생회 구성원 중에서 '학생 토론 동아리'를 조직하고 이들을 중심으로 학생 스스로 의제를 발굴하고 사업을 기획하는 체계를 구축했다. 여기에 더해 학생참여예산제를 적극적으로 활용해 공공 예산의 기획부터 집행까지의 전 과정을 학생들이 주도함으로써 실질적인 자치와 책임을 체득하는 기회를 제공하고 있다.</p>
+          <p>학생참여예산제는 미래시민교육의 중요한 구성요소로 학생들이 민주적 결정 과정을 직접 경험하도록 돕는다. 이를 통해 학생들은 학교의 주체로서 실질적인 영향력을 행사하고 생활 속 민주주의를 실현해 나가고 있다.</p>
+          <p>4월에 실시된 '학생회 리더십 캠프'는 신탄진중학교 학생 자치의 출발점이자, 미래시민교육 실현을 위한 토대를 마련하는 자리였다. 이 활동에서는 1분 스피치, 토론 교육, 팀워크 미션, 부서별 사업 계획 수립 등의 프로그램이 운영됐으며 학생참여예산제를 기반으로 1년간 추진할 활동을 각 부서에서 기획하고 구체적인 실행 계획을 세운 뒤 이에 필요한 예산을 항목별로 산출하고 배정해 보는 활동이 포함됐다.</p>
+          <p>이 과정을 통해 학생들은 공동체의 문제를 스스로 정의하고 해결 방안을 설계하는 경험을 쌓으며, 정책 결정과 예산 집행이라는 실제 과정을 학습했다. 학생들은 부서별 예산안 작성과 공동 심의를 통해 타인의 의견을 존중하고 합리적 판단을 내리는 과정을 거치며, 책임감과 실천력을 키워나갔다.</p>
+
+          <h3>■ 어버이날 프로젝트 '효 ON!'</h3>
+          <p>5월에는 학생회가 기획한 공동체 실천 프로젝트인 '효(孝) ON! - 마을과 가정에 켜는 사랑의 불빛'이 진행됐다. 이 프로젝트는 지역사회와의 연계를 통해 공동체 구성원으로서의 책임감과 사회적 감수성을 키우기 위한 활동으로 감사 편지 쓰기, 떡 카네이션 제작, 마을 어르신 방문 등이 포함됐다.</p>
+          <p>학생들은 사전에 역할을 분담하고 활동 전 리허설을 갖는 등 체계적인 준비 과정을 거쳤으며, 어르신들과의 만남을 통해 서로의 삶을 공감하고 존중하는 시간을 가졌다. 이 활동은 학생들이 단순한 봉사를 넘어 사회적 연대를 실천하는 시민으로 성장하는 계기를 마련했다.</p>
+
+          <h3>■ 스승의 날, 예산으로 기획한 존중의 문화</h3>
+          <p>스승의 날에는 학생회가 중심이 돼 편지 쓰기, 부채 제작, '스승의 은혜' 제창 등 다양한 활동을 전개했다. 이 사업은 학생참여예산제를 통해 계획된 것으로 행사에 필요한 물품은 학생들이 작성한 예산안에 따라 구매됐다.</p>
+          <p>학생회는 각 학년과 부서의 의견을 수렴해 프로그램을 구성했고 실행 후에는 설문조사를 통해 효과를 점검하는 평가 과정도 진행했다. 이 모든 과정은 학생 스스로가 학교 문화의 변화를 주도할 수 있음을 보여주는 사례로 남았다고 학교는 설명했다.</p>
+
+          <h3>■ 입학 100일 프로젝트...학교 문화로 자리 잡다</h3>
+          <p>지난 6월 1학년 입학 100일을 맞아 진행된 축하 행사는 학생회 중심의 자치활동 중 하나로 영상 제작, 인간 화환 환영식, 퀴즈, 미래의 나에게 쓰는 편지 등으로 구성됐다. 이 활동은 학생참여예산제를 통해 실행되었으며, 1학년 학생들의 공동체 소속감을 높이고 선후배 간의 관계를 자연스럽게 연결하는 데 기여했다.</p>
+          <p>학생들은 학년 초의 어색함을 극복하고, 같은 공간에서 함께 성장해 가는 동료로서의 유대감을 쌓을 수 있었다. 이 행사는 매년 학생회가 주도하여 운영되는 고유한 전통으로 자리 잡아, 신탄진중학교의 자치 문화와 공동체 정체성을 상징하는 대표 행사로 발전하고 있다.</p>
+
+          <h3>■ '물총ON, 우정UP!' 놀이 속 민주적 질서</h3>
+          <p>7월 꿈·끼 탐색 주간에 열린 '물총ON, 우정UP!' 행사는 학급 대항 물총놀이와 자유시간 활동으로 구성된 공동체 놀이 프로젝트였다. 이 행사는 학생회와 방송반이 공동으로 운영하며, 규칙 만들기, 안전교육 영상 제작, 물품 배부 등 모든 과정을 학생들이 주도했다.</p>
+          <p>학생들은 사전에 규칙을 정하고, 경기 운영 방식을 협의하며, 물총 사용의 제한 사항까지 스스로 설계했다. 이 과정에서 학생들은 자율적 질서의 의미와 규칙 준수의 중요성을 체험적으로 학습하였고, 놀이 속에서 민주적 소통과 책임 있는 행동을 실천할 수 있었다.</p>
+          <p>이찬희 학생(2학년)은 "평소 어색했던 친구와 이번 활동을 계기로 말문이 트였다"며 공동체 활동이 관계 형성과 학교 적응에 실질적으로 도움이 되었음을 전했다.</p>
+          <p>박예린 학생(1학년)은 "누가 시켜서가 아니라 우리끼리 만든 규칙을 함께 지키면서 더 재미있고 자유롭게 놀 수 있었던 점이 기억에 남는다"라고 했다.</p>
+
+          <h3>■ 기획부터 예산까지...학생이 움직이는 학교 문화</h3>
+          <p>신탄진중학교는 학생회를 중심으로 구성된 조직 내에서 학생 토론 동아리를 별도로 운영하여, 토론과 기획이 유기적으로 연결된 자치 구조를 정착시켰다. 학생회는 단순한 대표 기구가 아닌, 학교 내 모든 자치활동의 실질적인 실행 기구로 기능하며 학생참여예산제를 통해 학교 운영 전반에 참여하고 있다.</p>
+          <p>학생들은 예산의 '기획-심의-집행-평가' 모든 과정을 경험하며 학교 운영이 단순히 주어진 것이 아니라 구성원이 함께 만들어가는 과정임을 몸소 체득하고 있다. 자율성과 공동체 감수성을 동시에 기를 수 있는 이러한 경험은 학생 개인의 성장뿐 아니라 학교 문화 전체에 긍정적인 변화를 이끌고 있다.</p>
+          <p>신탄진중의 미래시민교육은 학생 주도의 자치 구조 속에서 자연스럽게 실현되고 있으며, 이러한 활동은 더 이상 단기적 행사가 아닌 지속 가능한 교육과정으로 자리 잡고 있다.</p>
+          <p>김종우 교장은 "학생들이 직접 기획하고 예산을 세워 학교의 문제를 해결해 나가는 모습에서 진정한 시민교육의 방향을 느낀다"라며, "학생회의 활동이 일회성 행사가 아니라 생활 속 민주주의가 되도록 학교 전체가 함께 응원하겠다"고 강조했다.</p>
+          <p class="src">※ 위 기사는 대전시교육청의 지원을 받아 작성된 기사입니다. · 출처: 충청뉴스 이성현 기자</p>
+        </div>
+        <div class="glossary">
+          <b>어려운 낱말 도움말</b>
+          <dl>
+            <dt>자치</dt><dd>스스로 정하고 해 나가는 것.</dd>
+            <dt>예산</dt><dd>어떤 일에 쓸 돈을 미리 정해 두는 것.</dd>
+            <dt>학생참여예산제</dt><dd>학교에서 쓸 돈을 학생들이 직접 계획하고 쓰는 제도.</dd>
+            <dt>의제</dt><dd>함께 이야기해서 정할 문제나 주제.</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="answer-col">
+      <div class="card" style="margin-bottom:16px;">
+        <h2><span class="badge">1</span> 참여한 일을 찾아 쓰기</h2>
+        <p class="hint">기사에서 <b>학생들이 참여한 일</b>을 찾아 쓰세요. (누가 + 무엇을 했는지)</p>
+        <textarea id="q1" placeholder="예) 학생들이 ○○을(를) 했다."></textarea>
+        <div><button class="copybtn" data-copy="q1" type="button">📋 1번 답 복사</button></div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <h2><span class="badge">2</span> 내 의견 쓰기</h2>
+        <p class="hint">찾은 참여 사례에 대해 <b>내 생각(의견)과 그 까닭</b>을 쓰세요.</p>
+        <textarea id="q2" placeholder="예) 학생들이 스스로 정한 것이 좋다고 생각한다. 왜냐하면 ~ 때문이다."></textarea>
+        <div><button class="copybtn" data-copy="q2" type="button">📋 2번 답 복사</button></div>
+      </div>
+
+      <div class="card">
+        <h2>✅ 스스로 점검</h2>
+        <ul class="check">
+          <li><input type="checkbox" id="c1"><label for="c1"><b>㉠</b> 누가 참여했는지 썼어요. (예: 학생들)</label></li>
+          <li><input type="checkbox" id="c2"><label for="c2"><b>㉡</b> 무엇을 했는지 썼어요. (예: 예산 짜기, 규칙 만들기)</label></li>
+          <li><input type="checkbox" id="c3"><label for="c3"><b>㉢</b> 이 일에 대한 내 생각(의견)을 썼어요.</label></li>
+          <li><input type="checkbox" id="c4"><label for="c4"><b>㉣</b> 그렇게 생각한 까닭도 썼어요. (왜냐하면 ~)</label></li>
+        </ul>
+        <div class="selfview" id="selfview"></div>
+        <p class="hint" style="margin-top:6px">※ 이건 점수가 아니라, 제출하기 전에 <b>스스로 확인</b>하는 도움말이에요.</p>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" id="fileBtn" type="button">답안 저장 (파일)</button>
+        <button class="btn ghost" id="printBtn" type="button">인쇄·PDF (Ctrl+P)</button>
+        <button class="btn ghost" id="clearBtn" type="button">지우기</button>
+        <span class="saved" id="saved" hidden>저장됨 ✓</span>
+      </div>
+      <p class="hint" id="printHelp" style="margin-top:8px">💡 <b>PDF로 저장하는 법</b>: 키보드 <b>Ctrl+P</b>(맥은 <b>⌘+P</b>)를 누르세요. → 인쇄 창에서 대상을 <b>'PDF로 저장'</b>으로 바꾸고 <b>저장</b>. (이 화면 안에서는 버튼이 인쇄 창을 못 열 수 있어요. 그럴 땐 <b>[답안 파일로 저장]</b>을 누르세요.)</p>
+      <p class="saved" id="actionMsg" hidden style="margin-top:6px"></p>
+    </div>
+  </div>
+
+  <p class="foot">※ 쓰던 내용은 이 기기의 브라우저에 자동으로 임시 저장돼요. 다 쓰면 <b>[PDF로 저장]</b>을 누르고, 인쇄 창에서 <b>'대상(프린터)'을 'PDF로 저장'</b>으로 골라 <b>저장</b>을 누르세요. 완성한 평가지가 <b>내 컴퓨터에 PDF 파일</b>로 저장돼요. (파일 이름은 학년반·번호·이름으로 자동 지정됩니다. 저장한 파일은 선생님 안내에 따라 제출하세요.)</p>
+</div>
+
+<script>
+  var ids=['cls','no','nm','q1','q2','c1','c2','c3','c4'];
+  var KEY='jachi-worksheet-v1';
+  function load(){
+    try{
+      var d=JSON.parse(localStorage.getItem(KEY)||'{}');
+      ids.forEach(function(id){
+        var el=document.getElementById(id); if(!el)return;
+        if(el.type==='checkbox'){ if(d[id])el.checked=true; }
+        else if(d[id]!=null){ el.value=d[id]; }
+      });
+    }catch(e){}
+    grow();
+  }
+  var t;
+  function save(){
+    try{
+      var d={};
+      ids.forEach(function(id){var el=document.getElementById(id);if(!el)return;d[id]=el.type==='checkbox'?el.checked:el.value;});
+      localStorage.setItem(KEY,JSON.stringify(d));
+      var s=document.getElementById('saved'); s.hidden=false;
+      clearTimeout(t); t=setTimeout(function(){s.hidden=true;},1200);
+    }catch(e){}
+  }
+  function grow(){
+    ['q1','q2'].forEach(function(id){var el=document.getElementById(id);if(!el)return;el.style.height='auto';el.style.height=(el.scrollHeight+2)+'px';});
+  }
+  var CK={c1:'㉠ 누가 참여했는지',c2:'㉡ 무엇을 했는지',c3:'㉢ 내 의견',c4:'㉣ 까닭'};
+  function updateSelf(){
+    var sv=document.getElementById('selfview'); if(!sv)return;
+    var keys=['c1','c2','c3','c4'], n=0, miss=[];
+    keys.forEach(function(k){ if(document.getElementById(k).checked)n++; else miss.push(CK[k]); });
+    if(n===0){ sv.style.display='none'; return; }
+    sv.style.display='block';
+    var head=n>=4?'🌟 아주 좋아요! 네 가지가 모두 들어갔어요.':
+             n===3?'👍 잘하고 있어요! 한 가지만 더 확인해 볼까요?':
+             n===2?'🙂 좋아요. 두 가지를 더 넣으면 완성돼요.':
+                   '✏️ 시작이 좋아요! 아래를 더 채워 볼까요?';
+    sv.innerHTML=head+(miss.length?('<span class="miss">아직: '+miss.join(', ')+'</span>'):'');
+  }
+  document.addEventListener('input',function(e){ if(e.target && ids.indexOf(e.target.id)>-1){ save(); if(e.target.tagName==='TEXTAREA')grow(); if(e.target.id.charAt(0)==='c')updateSelf(); } });
+  document.getElementById('printBtn').addEventListener('click',function(){ grow(); document.getElementById('printHelp').hidden=false; try{ window.print(); }catch(e){} });
+
+  function escHtml(s){return (s==null?'':String(s)).replace(/[&<>]/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[m];});}
+  function buildAnswerDoc(){
+    var cls=document.getElementById('cls').value, no=document.getElementById('no').value, nm=document.getElementById('nm').value;
+    var q1=document.getElementById('q1').value, q2=document.getElementById('q2').value;
+    var checks=['c1','c2','c3','c4'].map(function(id){return document.getElementById(id).checked;});
+    var ck=['㉠ 누가 참여했는지','㉡ 무엇을 했는지','㉢ 내 의견','㉣ 까닭'];
+    var lis=ck.map(function(t,i){return '<li>'+(checks[i]?'☑':'☐')+' '+escHtml(t)+'</li>';}).join('');
+    return '<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>학생 자치 평가지</title>'+
+      '<style>body{font-family:sans-serif;max-width:720px;margin:24px auto;padding:0 16px;line-height:1.6;color:#111}h1{font-size:20px}dt{font-weight:700;margin-top:14px}dd{margin:4px 0 0;white-space:pre-wrap}ul{padding-left:18px}</style></head><body>'+
+      '<h1>학생 자치 평가지 — 민주주의와 자치</h1>'+
+      '<p>학년·반 '+escHtml(cls)+' / 번호 '+escHtml(no)+' / 이름 '+escHtml(nm)+'</p>'+
+      '<dl><dt>1번 · 참여 사례</dt><dd>'+escHtml(q1)+'</dd><dt>2번 · 내 의견</dt><dd>'+escHtml(q2)+'</dd></dl>'+
+      '<p><b>스스로 점검</b></p><ul>'+lis+'</ul>'+
+      '<p style="color:#888;font-size:12px;margin-top:20px">※ 이 파일을 열어 인쇄(대상: PDF로 저장)하면 PDF로도 만들 수 있어요.</p></body></html>';
+  }
+  function say(t){ var m=document.getElementById('actionMsg'); if(m){ m.textContent=t||''; m.hidden=!t; } }
+  function copyText(id, btn){
+    var v=document.getElementById(id).value||'';
+    var orig=btn.textContent;
+    function done(ok){ btn.textContent = ok?'복사됨 ✓':'복사 안 됨 (길게 눌러 복사)'; setTimeout(function(){btn.textContent=orig;}, 1600); }
+    function fallback(){
+      try{ var ta=document.createElement('textarea'); ta.value=v; ta.style.position='fixed'; ta.style.top='0'; ta.style.opacity='0'; document.body.appendChild(ta); ta.focus(); ta.select(); var ok=document.execCommand('copy'); document.body.removeChild(ta); done(ok); }
+      catch(e){ done(false); }
+    }
+    if(!v){ btn.textContent='먼저 답을 쓰세요'; setTimeout(function(){btn.textContent=orig;},1600); return; }
+    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(v).then(function(){done(true);}, fallback); }
+    else { fallback(); }
+  }
+  document.addEventListener('click', function(e){ var b=e.target.closest && e.target.closest('[data-copy]'); if(b){ copyText(b.getAttribute('data-copy'), b); } });
+  var DL=null;
+  (async function(){ try{ DL = window.claude&&claude.use ? await claude.use('downloads') : null; }catch(e){ DL=null; } })();
+  document.getElementById('fileBtn').addEventListener('click',async function(){
+    if(!DL){ say('이 화면에서는 파일 저장이 안 돼요. 브라우저 새 탭에서 열고 Ctrl+P로 PDF 저장하세요.'); return; }
+    say('저장 준비 중...');
+    try{ await DL.save({filename: printName()+'.html', data: buildAnswerDoc()}); say('답안 파일을 저장했어요 ✓ (그 파일을 열어 Ctrl+P로 PDF로도 만들 수 있어요.)'); }
+    catch(e){ if(e&&e.code==='declined'){ say(''); } else { say('저장을 못했어요. 브라우저 새 탭에서 Ctrl+P로 저장해 주세요.'); } }
+  });
+  var clearArmed=false, clearTimer=null;
+  document.getElementById('clearBtn').addEventListener('click',function(){
+    var b=this;
+    if(!clearArmed){ clearArmed=true; b.textContent='다시 누르면 지워져요'; clearTimer=setTimeout(function(){clearArmed=false;b.textContent='지우기';},3000); return; }
+    clearTimeout(clearTimer); clearArmed=false; b.textContent='지우기';
+    try{localStorage.removeItem(KEY);}catch(e){}
+    ids.forEach(function(id){var el=document.getElementById(id);if(!el)return;if(el.type==='checkbox')el.checked=false;else el.value='';});
+    grow(); updateSelf(); say('내용을 지웠어요.');
+  });
+  var ORIG_TITLE=document.title;
+  function printName(){
+    var cls=(document.getElementById('cls').value||'').trim();
+    var no=(document.getElementById('no').value||'').trim();
+    var nm=(document.getElementById('nm').value||'').trim();
+    var parts=['학생자치평가지']; if(cls)parts.push(cls); if(no)parts.push(no+'번'); if(nm)parts.push(nm);
+    return parts.join('_').replace(/\s+/g,'');
+  }
+  window.addEventListener('beforeprint',function(){ grow(); try{document.title=printName();}catch(e){} });
+  window.addEventListener('afterprint',function(){ try{document.title=ORIG_TITLE;}catch(e){} });
+  load();
+  updateSelf();
+</script>

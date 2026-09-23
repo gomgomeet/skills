@@ -64,6 +64,13 @@
   .check input{width:18px;height:18px;margin-top:2px;flex:none;accent-color:var(--good);}
   .selfview{margin-top:10px;font-size:13.5px;font-weight:600;padding:10px 12px;border-radius:10px;background:var(--accent-soft);color:var(--accent-ink);display:none;}
   .selfview .miss{display:block;font-weight:500;color:var(--muted);margin-top:3px;font-size:12.5px;}
+  .formcta{display:inline-block;background:#1a73e8;color:#fff;text-decoration:none;font-weight:700;border-radius:10px;padding:13px 20px;font-size:15.5px;box-shadow:0 2px 8px rgba(26,115,232,.3);}
+  .formcta:hover{background:#155ec4;}
+  .formbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:2px 0 16px;}
+  .formbar .msg{font-size:12.5px;color:var(--muted);}
+  .copybtn{margin-top:8px;font-size:12.5px;padding:6px 12px;border-radius:8px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-family:inherit;font-weight:600;cursor:pointer;}
+  .copybtn:hover{background:var(--accent-soft);}
+  .copybtn:focus-visible{outline:2px solid var(--focus);outline-offset:2px;}
   .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center;}
   .btn{font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;border-radius:10px;padding:10px 18px;border:1.5px solid var(--accent);}
   .btn.primary{background:var(--accent);color:#fff;}
@@ -97,6 +104,11 @@
       <label>이름 <input id="nm" placeholder="이름"></label>
     </div>
   </header>
+
+  <div class="formbar">
+    <a class="formcta" href="PASTE_YOUR_GOOGLE_FORM_VIEWFORM_URL_HERE" target="_blank" rel="noopener">✍️ 구글 폼에서 답 제출하기 →</a>
+    <span class="msg">기사는 아래에서 읽고, <b>답은 구글 폼에 제출</b>하세요. (이 화면의 답 칸은 연습용이에요.)</span>
+  </div>
 
   <div class="grid">
     <div class="article-col">
@@ -151,12 +163,14 @@
         <h2><span class="badge">1</span> 참여한 일을 찾아 쓰기</h2>
         <p class="hint">기사에서 <b>학생들이 참여한 일</b>을 찾아 쓰세요. (누가 + 무엇을 했는지)</p>
         <textarea id="q1" placeholder="예) 학생들이 ○○을(를) 했다."></textarea>
+        <div><button class="copybtn" data-copy="q1" type="button">📋 1번 답 복사</button></div>
       </div>
 
       <div class="card" style="margin-bottom:16px;">
         <h2><span class="badge">2</span> 내 말로 바꿔 쓰기</h2>
         <p class="hint">위에서 찾은 일을 <b>기사 문장을 베끼지 말고, 내 말로</b> 바꿔 쓰세요.</p>
         <textarea id="q2" placeholder="예) 학교 학생들이 돈을 어디에 쓸지 직접 정하고 행사를 열었다."></textarea>
+        <div><button class="copybtn" data-copy="q2" type="button">📋 2번 답 복사</button></div>
       </div>
 
       <div class="card">
@@ -172,8 +186,8 @@
       </div>
 
       <div class="actions">
-        <button class="btn primary" id="printBtn" type="button">PDF로 저장 (Ctrl+P)</button>
-        <button class="btn ghost" id="fileBtn" type="button">답안 파일로 저장</button>
+        <button class="btn primary" id="fileBtn" type="button">답안 저장 (파일)</button>
+        <button class="btn ghost" id="printBtn" type="button">인쇄·PDF (Ctrl+P)</button>
         <button class="btn ghost" id="clearBtn" type="button">지우기</button>
         <span class="saved" id="saved" hidden>저장됨 ✓</span>
       </div>
@@ -244,6 +258,19 @@
       '<p style="color:#888;font-size:12px;margin-top:20px">※ 이 파일을 열어 인쇄(대상: PDF로 저장)하면 PDF로도 만들 수 있어요.</p></body></html>';
   }
   function say(t){ var m=document.getElementById('actionMsg'); if(m){ m.textContent=t||''; m.hidden=!t; } }
+  function copyText(id, btn){
+    var v=document.getElementById(id).value||'';
+    var orig=btn.textContent;
+    function done(ok){ btn.textContent = ok?'복사됨 ✓':'복사 안 됨 (길게 눌러 복사)'; setTimeout(function(){btn.textContent=orig;}, 1600); }
+    function fallback(){
+      try{ var ta=document.createElement('textarea'); ta.value=v; ta.style.position='fixed'; ta.style.top='0'; ta.style.opacity='0'; document.body.appendChild(ta); ta.focus(); ta.select(); var ok=document.execCommand('copy'); document.body.removeChild(ta); done(ok); }
+      catch(e){ done(false); }
+    }
+    if(!v){ btn.textContent='먼저 답을 쓰세요'; setTimeout(function(){btn.textContent=orig;},1600); return; }
+    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(v).then(function(){done(true);}, fallback); }
+    else { fallback(); }
+  }
+  document.addEventListener('click', function(e){ var b=e.target.closest && e.target.closest('[data-copy]'); if(b){ copyText(b.getAttribute('data-copy'), b); } });
   var DL=null;
   (async function(){ try{ DL = window.claude&&claude.use ? await claude.use('downloads') : null; }catch(e){ DL=null; } })();
   document.getElementById('fileBtn').addEventListener('click',async function(){

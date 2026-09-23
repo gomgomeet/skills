@@ -97,7 +97,7 @@
   <header class="hd">
     <div class="eyebrow">4학년 사회 · 민주주의와 자치</div>
     <h1>학생 자치, 참여를 찾아라!</h1>
-    <p>신문기사를 읽고, 학생들이 <b>참여한 일</b>을 찾아 <b>내 말로</b> 써 봐요.</p>
+    <p>신문기사를 읽고, 학생들이 <b>참여한 일</b>을 찾아 <b>내 의견</b>을 써 봐요.</p>
     <div class="idrow">
       <label>학년·반 <input id="cls" placeholder="4-1"></label>
       <label>번호 <input id="no" placeholder="1" style="width:56px"></label>
@@ -167,9 +167,9 @@
       </div>
 
       <div class="card" style="margin-bottom:16px;">
-        <h2><span class="badge">2</span> 내 말로 바꿔 쓰기</h2>
-        <p class="hint">위에서 찾은 일을 <b>기사 문장을 베끼지 말고, 내 말로</b> 바꿔 쓰세요.</p>
-        <textarea id="q2" placeholder="예) 학교 학생들이 돈을 어디에 쓸지 직접 정하고 행사를 열었다."></textarea>
+        <h2><span class="badge">2</span> 내 의견 쓰기</h2>
+        <p class="hint">찾은 참여 사례에 대해 <b>내 생각(의견)과 그 까닭</b>을 쓰세요.</p>
+        <textarea id="q2" placeholder="예) 학생들이 스스로 정한 것이 좋다고 생각한다. 왜냐하면 ~ 때문이다."></textarea>
         <div><button class="copybtn" data-copy="q2" type="button">📋 2번 답 복사</button></div>
       </div>
 
@@ -178,8 +178,8 @@
         <ul class="check">
           <li><input type="checkbox" id="c1"><label for="c1"><b>㉠</b> 누가 참여했는지 썼어요. (예: 학생들)</label></li>
           <li><input type="checkbox" id="c2"><label for="c2"><b>㉡</b> 무엇을 했는지 썼어요. (예: 예산 짜기, 규칙 만들기)</label></li>
-          <li><input type="checkbox" id="c3"><label for="c3"><b>㉮</b> 기사 문장을 그대로 베끼지 않고, 내 낱말로 바꿨어요.</label></li>
-          <li><input type="checkbox" id="c4"><label for="c4"><b>㉯</b> '누가 + 무엇을 했다'가 문장에 들어 있어요.</label></li>
+          <li><input type="checkbox" id="c3"><label for="c3"><b>㉢</b> 이 일에 대한 내 생각(의견)을 썼어요.</label></li>
+          <li><input type="checkbox" id="c4"><label for="c4"><b>㉣</b> 그렇게 생각한 까닭도 썼어요. (왜냐하면 ~)</label></li>
         </ul>
         <div class="selfview" id="selfview"></div>
         <p class="hint" style="margin-top:6px">※ 이건 점수가 아니라, 제출하기 전에 <b>스스로 확인</b>하는 도움말이에요.</p>
@@ -226,7 +226,7 @@
   function grow(){
     ['q1','q2'].forEach(function(id){var el=document.getElementById(id);if(!el)return;el.style.height='auto';el.style.height=(el.scrollHeight+2)+'px';});
   }
-  var CK={c1:'㉠ 누가 참여했는지',c2:'㉡ 무엇을 했는지',c3:'㉮ 내 낱말로 바꾸기',c4:"㉯ '누가+한 일'"};
+  var CK={c1:'㉠ 누가 참여했는지',c2:'㉡ 무엇을 했는지',c3:'㉢ 내 의견',c4:'㉣ 까닭'};
   function updateSelf(){
     var sv=document.getElementById('selfview'); if(!sv)return;
     var keys=['c1','c2','c3','c4'], n=0, miss=[];
@@ -247,13 +247,13 @@
     var cls=document.getElementById('cls').value, no=document.getElementById('no').value, nm=document.getElementById('nm').value;
     var q1=document.getElementById('q1').value, q2=document.getElementById('q2').value;
     var checks=['c1','c2','c3','c4'].map(function(id){return document.getElementById(id).checked;});
-    var ck=['㉠ 누가 참여했는지','㉡ 무엇을 했는지','㉮ 내 낱말로 바꾸기',"㉯ '누가+한 일'"];
+    var ck=['㉠ 누가 참여했는지','㉡ 무엇을 했는지','㉢ 내 의견','㉣ 까닭'];
     var lis=ck.map(function(t,i){return '<li>'+(checks[i]?'☑':'☐')+' '+escHtml(t)+'</li>';}).join('');
     return '<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>학생 자치 평가지</title>'+
       '<style>body{font-family:sans-serif;max-width:720px;margin:24px auto;padding:0 16px;line-height:1.6;color:#111}h1{font-size:20px}dt{font-weight:700;margin-top:14px}dd{margin:4px 0 0;white-space:pre-wrap}ul{padding-left:18px}</style></head><body>'+
       '<h1>학생 자치 평가지 — 민주주의와 자치</h1>'+
       '<p>학년·반 '+escHtml(cls)+' / 번호 '+escHtml(no)+' / 이름 '+escHtml(nm)+'</p>'+
-      '<dl><dt>1번 · 참여 사례</dt><dd>'+escHtml(q1)+'</dd><dt>2번 · 내 말로 쓰기</dt><dd>'+escHtml(q2)+'</dd></dl>'+
+      '<dl><dt>1번 · 참여 사례</dt><dd>'+escHtml(q1)+'</dd><dt>2번 · 내 의견</dt><dd>'+escHtml(q2)+'</dd></dl>'+
       '<p><b>스스로 점검</b></p><ul>'+lis+'</ul>'+
       '<p style="color:#888;font-size:12px;margin-top:20px">※ 이 파일을 열어 인쇄(대상: PDF로 저장)하면 PDF로도 만들 수 있어요.</p></body></html>';
   }

@@ -116,7 +116,7 @@
     </div>
     <div class="frow">
       <div class="field grow"><label class="cap">1번 · 참여 사례 (학생 답 붙여넣기)</label><textarea id="f-q1" placeholder="학생이 찾은 참여 사례"></textarea></div>
-      <div class="field grow"><label class="cap">2번 · 내 말로 쓰기 (학생 답 붙여넣기)</label><textarea id="f-q2" placeholder="학생이 자기 말로 쓴 문장"></textarea></div>
+      <div class="field grow"><label class="cap">2번 · 내 의견 (학생 답 붙여넣기)</label><textarea id="f-q2" placeholder="학생이 쓴 의견과 까닭"></textarea></div>
     </div>
 
     <div class="aibox" id="aibox">
@@ -134,8 +134,8 @@
     <div class="marks">
       <label class="mk-l"><input type="checkbox" id="m-ga">㉠ 참여한 사람</label>
       <label class="mk-l"><input type="checkbox" id="m-na">㉡ 참여한 행동</label>
-      <label class="mk-l"><input type="checkbox" id="m-ma">㉮ 바꿔 쓰기</label>
-      <label class="mk-l"><input type="checkbox" id="m-ja">㉯ 내용 드러남</label>
+      <label class="mk-l"><input type="checkbox" id="m-ma">㉢ 내 의견</label>
+      <label class="mk-l"><input type="checkbox" id="m-ja">㉣ 까닭</label>
     </div>
     <div class="actions">
       <button class="btn primary" id="saveBtn" type="button">저장 (확정)</button>
@@ -156,14 +156,14 @@
         <thead><tr>
           <th class="c">반</th><th class="c">번호</th><th>이름</th>
           <th>1번 · 참여 사례</th><th>2번 · 내 말로</th>
-          <th class="c">㉠</th><th class="c">㉡</th><th class="c">㉮</th><th class="c">㉯</th>
-          <th class="c">사례</th><th class="c">쓰기</th><th class="c">수준</th><th class="c"></th>
+          <th class="c">㉠</th><th class="c">㉡</th><th class="c">㉢</th><th class="c">㉣</th>
+          <th class="c">사례</th><th class="c">의견</th><th class="c">수준</th><th class="c"></th>
         </tr></thead>
         <tbody id="rows"></tbody>
       </table>
     </div>
     <div class="empty" id="empty">아직 입력한 학생이 없습니다. 위에 학생 답을 넣고 <b>AI 채점 제안</b>을 눌러 보세요.</div>
-    <p class="foot">기준: ㉠ 참여한 사람 · ㉡ 참여한 행동 · ㉮ 바꿔 쓰기(베낀 문장 없음+바꾼 낱말 1개↑) · ㉯ 내용 드러남(누가+한 일). 사례=㉠㉡ 합(0~2), 쓰기=㉮㉯ 합(0~2). 수준=네 표시 중 4→매우잘함, 3→잘함, 2→보통, 1이하→노력요함.</p>
+    <p class="foot">기준: ㉠ 참여한 사람 · ㉡ 참여한 행동 · ㉢ 내 의견(자기 생각·판단) · ㉣ 까닭(이유). 사례=㉠㉡ 합(0~2), 의견=㉢㉣ 합(0~2). 수준=네 표시 중 4→매우잘함, 3→잘함, 2→보통, 1이하→노력요함.</p>
   </div>
 </div>
 
@@ -198,7 +198,7 @@ function gv(id){return document.getElementById(id);}
 
 function readForm(){var r={};F.forEach(function(k){r[k]=gv('f-'+k).value.trim();});M.forEach(function(k){r[k]=gv('m-'+k).checked;});return r;}
 function fillForm(r){F.forEach(function(k){gv('f-'+k).value=r&&r[k]!=null?r[k]:'';});M.forEach(function(k){gv('m-'+k).checked=!!(r&&r[k]);});preview();}
-function preview(){var r=readForm(),c=calc(r);gv('calcPreview').textContent='→ 사례 '+c.e1+'점 · 쓰기 '+c.e2+'점 · '+levelName(c.lv);}
+function preview(){var r=readForm(),c=calc(r);gv('calcPreview').textContent='→ 사례 '+c.e1+'점 · 의견 '+c.e2+'점 · '+levelName(c.lv);}
 function resetForm(){editId=null;gv('formTitle').textContent='학생 채점 입력';fillForm(null);gv('aiEv').style.display='none';gv('aiCmt').textContent='';gv('aiWarn').style.display='none';gv('aiStatus').textContent='';}
 
 /* ---- AI 채점 제안 ---- */
@@ -207,8 +207,8 @@ function buildPrompt(q1,q2){
   "아래 [기사]와 [학생 답]을 읽고, 다음 네 기준이 학생 답에 실제로 나타나는지만 판정하세요. 학생이 쓰지 않은 내용을 추론하거나 더하지 마세요. 근거는 반드시 학생 답에서 그대로 인용하고, 없으면 빈 문자열로 두세요.\n"+
   "㉠ 참여한 사람: 누가 참여했는지(학생·주민·시민 등)가 학생 답에 있는가.\n"+
   "㉡ 참여한 행동: 그들이 한 참여 행동(예산 짜기·규칙 만들기·회의·기획·봉사 등)이 있고, 그 행동이 기사에 실제로 나오는가.\n"+
-  "㉮ 바꿔 쓰기: 학생이 기사의 한 문장을 통째로 베끼지 않았고(기사와 똑같은 문장이 없음) + 기사에 없던 자기 낱말이 1개 이상 있는가.\n"+
-  "㉯ 내용 드러남: 학생 답 문장에 '누가'와 '무엇을 했다'가 함께 들어 있어 무슨 일인지 알 수 있는가.\n\n"+
+  "㉢ 내 의견: 학생 답에 기사 내용에 대한 자기 생각·판단(의견)이 있는가(예: '~는 좋다고 생각한다', '나도 참여하고 싶다'). 기사 내용을 옮기기만 한 것은 아님.\n"+
+  "㉣ 까닭: 그 의견의 이유·까닭을 함께 썼는가(예: '왜냐하면 ~', '~때문에').\n\n"+
   "[기사]\n"+ARTICLE+"\n\n[학생 답]\n1번(참여 사례): "+(q1||"(비어 있음)")+"\n2번(내 말로): "+(q2||"(비어 있음)")+"\n\n"+
   '다음 JSON만 출력하세요: {"ga":true,"na":true,"ma":true,"ja":true,"evidence":{"ga":"학생 답 인용","na":"","ma":"","ja":""},"comment":"교사에게 한 줄 참고"}';
 }
@@ -223,7 +223,7 @@ async function aiScore(){
     var out=await sampler.json(buildPrompt(r.q1,r.q2),{signal:aiCtl.signal,modelTier:'default'});
     ['ga','na','ma','ja'].forEach(function(k){gv('m-'+k).checked=!!out[k];});
     var ev=out.evidence||{};
-    var labels={ga:'㉠ 참여한 사람',na:'㉡ 참여한 행동',ma:'㉮ 바꿔 쓰기',ja:'㉯ 내용 드러남'};
+    var labels={ga:'㉠ 참여한 사람',na:'㉡ 참여한 행동',ma:'㉢ 내 의견',ja:'㉣ 까닭'};
     var html='';
     ['ga','na','ma','ja'].forEach(function(k){
       var on=!!out[k];
@@ -292,7 +292,7 @@ function startEdit(id){var r=records.find(function(x){return x.id===id;});if(!r)
 
 /* ---- CSV ---- */
 function buildCsv(){
-  var head=['반','번호','이름','1번(참여 사례)','2번(내 말로)','㉠','㉡','㉮','㉯','사례점수','쓰기점수','수준'];
+  var head=['반','번호','이름','1번(참여 사례)','2번(내 의견)','㉠','㉡','㉢','㉣','사례점수','의견점수','수준'];
   var lines=[head];
   records.slice().sort(sortRecs).forEach(function(r){var c=calc(r);
     lines.push([r.cls,r.no,r.name,r.q1,r.q2,r.ga?'O':'X',r.na?'O':'X',r.ma?'O':'X',r.ja?'O':'X',c.e1,c.e2,levelName(c.lv)]);});

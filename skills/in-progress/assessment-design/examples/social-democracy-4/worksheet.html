@@ -172,12 +172,13 @@
       </div>
 
       <div class="actions">
-        <button class="btn primary" id="printBtn" type="button">PDF로 저장 (내 컴퓨터)</button>
-        <button class="btn ghost" id="fileBtn" type="button" hidden>답안 파일로 저장</button>
+        <button class="btn primary" id="printBtn" type="button">PDF로 저장 (Ctrl+P)</button>
+        <button class="btn ghost" id="fileBtn" type="button">답안 파일로 저장</button>
         <button class="btn ghost" id="clearBtn" type="button">지우기</button>
         <span class="saved" id="saved" hidden>저장됨 ✓</span>
       </div>
-      <p class="hint" id="printHelp" style="margin-top:8px">💡 <b>PDF로 저장하는 법</b>: 위 버튼이 안 눌리면 키보드 <b>Ctrl+P</b>(맥은 <b>⌘+P</b>)를 누르세요. → 인쇄 창에서 대상을 <b>'PDF로 저장'</b>으로 바꾸고 <b>저장</b>. (이 화면에서는 버튼으로 인쇄 창을 못 열 수 있어요. 그래도 안 되면 아래 <b>[답안 파일로 저장]</b>.)</p>
+      <p class="hint" id="printHelp" style="margin-top:8px">💡 <b>PDF로 저장하는 법</b>: 키보드 <b>Ctrl+P</b>(맥은 <b>⌘+P</b>)를 누르세요. → 인쇄 창에서 대상을 <b>'PDF로 저장'</b>으로 바꾸고 <b>저장</b>. (이 화면 안에서는 버튼이 인쇄 창을 못 열 수 있어요. 그럴 땐 <b>[답안 파일로 저장]</b>을 누르세요.)</p>
+      <p class="saved" id="actionMsg" hidden style="margin-top:6px"></p>
     </div>
   </div>
 
@@ -242,18 +243,23 @@
       '<p><b>스스로 점검</b></p><ul>'+lis+'</ul>'+
       '<p style="color:#888;font-size:12px;margin-top:20px">※ 이 파일을 열어 인쇄(대상: PDF로 저장)하면 PDF로도 만들 수 있어요.</p></body></html>';
   }
+  function say(t){ var m=document.getElementById('actionMsg'); if(m){ m.textContent=t||''; m.hidden=!t; } }
   var DL=null;
-  (async function(){ try{ DL = window.claude&&claude.use ? await claude.use('downloads') : null; }catch(e){ DL=null; } if(DL) document.getElementById('fileBtn').hidden=false; })();
+  (async function(){ try{ DL = window.claude&&claude.use ? await claude.use('downloads') : null; }catch(e){ DL=null; } })();
   document.getElementById('fileBtn').addEventListener('click',async function(){
-    if(!DL){ alert('이 화면에서는 파일 저장을 쓸 수 없어요. 브라우저 새 탭에서 열어 PDF로 저장해 주세요.'); return; }
-    try{ await DL.save({filename: printName()+'.html', data: buildAnswerDoc()}); }
-    catch(e){ if(e&&e.code!=='declined') alert('저장을 못했어요: '+(e&&e.code||e)); }
+    if(!DL){ say('이 화면에서는 파일 저장이 안 돼요. 브라우저 새 탭에서 열고 Ctrl+P로 PDF 저장하세요.'); return; }
+    say('저장 준비 중...');
+    try{ await DL.save({filename: printName()+'.html', data: buildAnswerDoc()}); say('답안 파일을 저장했어요 ✓ (그 파일을 열어 Ctrl+P로 PDF로도 만들 수 있어요.)'); }
+    catch(e){ if(e&&e.code==='declined'){ say(''); } else { say('저장을 못했어요. 브라우저 새 탭에서 Ctrl+P로 저장해 주세요.'); } }
   });
+  var clearArmed=false, clearTimer=null;
   document.getElementById('clearBtn').addEventListener('click',function(){
-    if(!confirm('쓴 내용을 모두 지울까요?'))return;
+    var b=this;
+    if(!clearArmed){ clearArmed=true; b.textContent='다시 누르면 지워져요'; clearTimer=setTimeout(function(){clearArmed=false;b.textContent='지우기';},3000); return; }
+    clearTimeout(clearTimer); clearArmed=false; b.textContent='지우기';
     try{localStorage.removeItem(KEY);}catch(e){}
     ids.forEach(function(id){var el=document.getElementById(id);if(!el)return;if(el.type==='checkbox')el.checked=false;else el.value='';});
-    grow();
+    grow(); updateSelf(); say('내용을 지웠어요.');
   });
   var ORIG_TITLE=document.title;
   function printName(){

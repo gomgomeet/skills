@@ -1,0 +1,5 @@
+interface:
+  display_name: "평가 설계 파트너"
+  short_description: "성취기준 기반 백워드 평가 설계를 단계별로 함께 만든다"
+policy:
+  allow_implicit_invocation: false

@@ -1,0 +1,106 @@
+<title>채점 기준표</title>
+<style>
+  :root{
+    --desk:#e7e9ee; --sheet:#fff; --ink:#1f2329; --muted:#5c626c; --line:#565c65; --line-soft:#9aa0a9;
+    --label-bg:#eef0f3; --band:#dde1e7; --accent:#2f5d8a; --good:#1f7a4d; --good-bg:#e2f3ea;
+    --blue:#2f6fb0; --blue-bg:#e5eefa; --amber:#a9701b; --amber-bg:#f7edd9; --red:#b23b3b; --red-bg:#f7e3e3;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--desk:#14171b;--muted:#565c66;}}
+  :root[data-theme="dark"]{--desk:#14171b;--muted:#565c66;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--desk);color:var(--ink);font-family:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif;line-height:1.55;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .bar{max-width:900px;margin:0 auto;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+  .bar h1{font-size:15px;margin:0;font-weight:700;}
+  .btn{font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;background:var(--accent);color:#fff;border:none;border-radius:7px;padding:8px 15px;}
+  .wrap{padding:0 16px 44px;}
+  .sheet{max-width:900px;margin:0 auto;background:var(--sheet);color:var(--ink);padding:26px 30px 32px;border:1px solid var(--line-soft);box-shadow:0 6px 24px rgba(0,0,0,.16);}
+  .doc-title{text-align:center;font-size:21px;font-weight:700;letter-spacing:.12em;margin:0 0 4px;}
+  .doc-sub{text-align:center;color:var(--muted);font-size:12.5px;margin-bottom:18px;}
+  h2{font-size:14px;margin:20px 0 8px;font-weight:700;border-left:4px solid var(--accent);padding-left:8px;}
+  table{width:100%;border-collapse:collapse;}
+  th,td{border:1px solid var(--line);padding:8px 9px;font-size:13px;vertical-align:top;}
+  th{background:var(--label-bg);font-weight:700;text-align:center;}
+  td.c{text-align:center;white-space:nowrap;}
+  .el{font-weight:700;background:var(--label-bg);white-space:nowrap;}
+  .pt{font-weight:700;text-align:center;white-space:nowrap;}
+  .p2{color:var(--good);} .p1{color:var(--amber);} .p0{color:var(--red);}
+  .legend{background:var(--label-bg);border-radius:8px;padding:12px 14px;font-size:12.5px;line-height:1.7;}
+  .legend b{color:var(--accent);}
+  .lv{font-weight:700;border-radius:999px;padding:2px 10px;font-size:12.5px;}
+  .lv4{background:var(--good-bg);color:var(--good);} .lv3{background:var(--blue-bg);color:var(--blue);}
+  .lv2{background:var(--amber-bg);color:var(--amber);} .lv1{background:var(--red-bg);color:var(--red);}
+  .note{max-width:900px;margin:12px auto 0;font-size:12px;color:var(--muted);}
+  @media print{body{background:#fff;}.bar{display:none;}.wrap{padding:0;}.sheet{max-width:none;border:none;box-shadow:none;padding:0;}@page{size:A4;margin:12mm;}}
+</style>
+
+<div class="bar">
+  <h1>채점 기준표 · 4학년 사회 민주주의와 자치</h1>
+  <button class="btn" id="printBtn" type="button">인쇄 / PDF (Ctrl+P)</button>
+</div>
+
+<div class="wrap">
+  <div class="sheet">
+    <div class="doc-title">채 점 기 준 표</div>
+    <div class="doc-sub">4학년 사회 · 8. 민주주의와 자치 [4사08-01] · 신문기사에서 참여 사례를 찾아 자신의 의견 쓰기</div>
+
+    <h2>1. 평가요소별 배점 기준</h2>
+    <table>
+      <colgroup><col style="width:120px"><col style="width:150px"><col><col><col></colgroup>
+      <thead><tr><th>평가요소</th><th>관찰 기준</th><th>2점</th><th>1점</th><th>0점</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="el">① 참여 사례 찾기</td>
+          <td>㉠ 참여한 사람<br>㉡ 참여한 행동</td>
+          <td>㉠·㉡을 <b>모두</b> 씀 (참여한 사람 + 참여 행동, <b>기사에 나온</b> 내용)</td>
+          <td>㉠·㉡ 중 <b>하나만</b> 쓰거나, 참여와 관련 없는 내용이 섞임</td>
+          <td>참여 사례가 아니거나(기사에 없는 내용), 사례를 찾지 못함</td>
+        </tr>
+        <tr>
+          <td class="el">② 내 의견 쓰기</td>
+          <td>㉢ 내 의견<br>㉣ 까닭</td>
+          <td>㉢·㉣을 <b>모두</b> 씀 (내 의견 + 까닭)</td>
+          <td>㉢·㉣ 중 <b>하나만</b> 씀 (의견만 있고 까닭이 없음 등)</td>
+          <td>의견이 없거나, 기사 내용만 옮겨 씀</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>2. 총점 → 수준 환산</h2>
+    <table>
+      <colgroup><col style="width:130px"><col style="width:120px"><col></colgroup>
+      <thead><tr><th>총점 (①+②)</th><th>수준</th><th>의미</th></tr></thead>
+      <tbody>
+        <tr><td class="pt">4점</td><td class="c"><span class="lv lv4">매우잘함</span></td><td>참여 사례를 정확히 찾고, 자신의 의견과 까닭을 모두 씀</td></tr>
+        <tr><td class="pt">3점</td><td class="c"><span class="lv lv3">잘함</span></td><td>대체로 갖췄으나 한 가지가 부족함</td></tr>
+        <tr><td class="pt">2점</td><td class="c"><span class="lv lv2">보통</span></td><td>사례 찾기 또는 의견 쓰기 중 한쪽만 충족</td></tr>
+        <tr><td class="pt">0~1점</td><td class="c"><span class="lv lv1">노력요함</span></td><td>사례를 찾지 못하거나 의견을 쓰지 못함</td></tr>
+      </tbody>
+    </table>
+    <p class="note" style="margin-top:6px">※ 총점 = ① 사례(0~2) + ② 의견(0~2), 최대 4점. 표시(㉠㉡㉢㉣) 갖춘 개수와 같습니다.</p>
+
+    <h2>3. 관찰 기준 정의</h2>
+    <div class="legend">
+      <b>[사례 찾기]</b> &nbsp;㉠ <b>참여한 사람</b>: 누가 참여했는지(학생·주민·시민 등)가 있다. &nbsp;㉡ <b>참여한 행동</b>: 그들이 한 참여 행동(예산 짜기·규칙 만들기·회의·기획·봉사 등)이 있고, 기사에 실제 나온 내용이다.<br>
+      <b>[내 의견 쓰기]</b> &nbsp;㉢ <b>내 의견</b>: 기사 내용에 대한 자기 생각·판단이 있다(예: "~는 좋다고 생각한다", "나도 참여하고 싶다"). &nbsp;㉣ <b>까닭</b>: 그 의견의 이유를 함께 썼다(예: "왜냐하면 ~", "~때문에").
+    </div>
+
+    <h2>4. 예시 답안</h2>
+    <table>
+      <colgroup><col style="width:120px"><col></colgroup>
+      <tbody>
+        <tr><td class="el">① 사례 찾기</td><td>학생들(㉠)이 학생참여예산제로 예산을 직접 짜서 학교 행사를 열었다(㉡). → <b>2점</b></td></tr>
+        <tr><td class="el">② 내 의견</td><td>"학생들이 스스로 예산을 정한 것이 좋다고 생각한다(㉢). 왜냐하면 직접 정하면 더 재미있고 책임감도 생기기 때문이다(㉣)." → <b>2점</b></td></tr>
+      </tbody>
+    </table>
+
+    <h2>5. 채점 원칙</h2>
+    <div class="legend">
+      ① AI 채점은 <b>제안</b>일 뿐, 최종 점수는 <b>교사가 확정</b>한다. &nbsp;② 각 기준은 <b>학생 답에 실제로 있는 근거</b>로만 인정한다(없는 것은 추론하지 않음). &nbsp;③ 수업에서 가르치지 않은 내용은 채점·피드백에 넣지 않는다. &nbsp;④ 개인정보는 최소화한다(이름 대신 번호).
+    </div>
+  </div>
+  <p class="note">※ 인쇄가 버튼으로 안 열리면 키보드 <b>Ctrl+P</b>(맥 ⌘+P) → 대상 'PDF로 저장'.</p>
+</div>
+
+<script>
+  document.getElementById('printBtn').addEventListener('click',function(){ try{window.print();}catch(e){} });
+</script>

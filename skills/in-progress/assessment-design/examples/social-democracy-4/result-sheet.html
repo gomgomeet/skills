@@ -1,0 +1,106 @@
+<title>평가 결과 시트</title>
+<style>
+  :root{
+    --ground:#eef1f5; --card:#fff; --ink:#1f242c; --muted:#5c626c; --line:#cfd5dd; --line-h:#565c65;
+    --label-bg:#eef0f3; --accent:#2f5d8a; --accent-soft:#e6eef6;
+    --good:#1f7a4d; --good-bg:#e2f3ea; --blue:#2f6fb0; --blue-bg:#e5eefa; --amber:#a9701b; --amber-bg:#f7edd9; --red:#b23b3b; --red-bg:#f7e3e3;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ground:#111419;--card:#1a1e25;--ink:#e8eaee;--muted:#98a0ab;--line:#2b313a;--line-h:#3a424d;--label-bg:#20262f;--accent:#6fa5d8;--accent-soft:#1d2836;--good:#5cc08a;--good-bg:#16281f;--blue:#78ade6;--blue-bg:#152437;--amber:#d6a24e;--amber-bg:#2f2614;--red:#e08383;--red-bg:#331d1d;}}
+  :root[data-theme="dark"]{--ground:#111419;--card:#1a1e25;--ink:#e8eaee;--muted:#98a0ab;--line:#2b313a;--line-h:#3a424d;--label-bg:#20262f;--accent:#6fa5d8;--accent-soft:#1d2836;--good:#5cc08a;--good-bg:#16281f;--blue:#78ade6;--blue-bg:#152437;--amber:#d6a24e;--amber-bg:#2f2614;--red:#e08383;--red-bg:#331d1d;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif;line-height:1.55;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .page{max-width:1160px;margin:0 auto;padding:18px 16px 60px;}
+  .bar{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:6px;}
+  h1{font-size:19px;margin:0;font-weight:700;}
+  .sub{color:var(--muted);font-size:12.5px;margin:2px 0 0;}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;}
+  .btn{font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;border-radius:8px;padding:8px 14px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);}
+  .btn.primary{background:var(--accent);color:#fff;}
+  .msg{font-size:12.5px;color:var(--good);font-weight:600;margin:6px 0 0;min-height:1em;}
+  .tablewrap{overflow-x:auto;margin-top:12px;border:1px solid var(--line-h);border-radius:10px;}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:1000px;background:var(--card);}
+  th,td{border:1px solid var(--line);padding:8px 9px;vertical-align:top;text-align:left;}
+  th{background:var(--label-bg);font-weight:700;white-space:nowrap;text-align:center;position:sticky;top:0;}
+  td.c{text-align:center;white-space:nowrap;}
+  .ans{min-width:150px;} .reason{min-width:190px;} .fb{min-width:190px;} .sety{min-width:230px;}
+  .pill{display:inline-block;font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 8px;white-space:nowrap;}
+  .lv3{background:var(--blue-bg);color:var(--blue);} .lv4{background:var(--good-bg);color:var(--good);} .lv2{background:var(--amber-bg);color:var(--amber);} .lv1{background:var(--red-bg);color:var(--red);}
+  .excluded td{color:var(--muted);background:repeating-linear-gradient(45deg,transparent,transparent 6px,rgba(150,150,150,.06) 6px,rgba(150,150,150,.06) 12px);}
+  .foot{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.6;}
+  .foot b{color:var(--ink);}
+  @media print{body{background:#fff;}.btns,.msg{display:none;}.tablewrap{overflow:visible;border:none;}table{min-width:0;font-size:10px;}th{position:static;}@page{size:A4 landscape;margin:8mm;}}
+</style>
+
+<div class="page">
+  <div class="bar">
+    <div>
+      <h1>평가 결과 시트 — 4학년 사회 민주주의와 자치</h1>
+      <p class="sub">[4사08-01] · 신문기사에서 참여 사례를 찾아 자신의 의견 쓰기 · 만점 4점(사례 2 + 의견 2) · AI 제안, 교사 확정</p>
+    </div>
+    <div class="btns">
+      <button class="btn primary" id="csvBtn" type="button">CSV 내보내기</button>
+      <button class="btn" id="printBtn" type="button">인쇄/PDF (Ctrl+P)</button>
+    </div>
+  </div>
+  <p class="msg" id="msg"></p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr>
+        <th>번호</th><th>이름</th>
+        <th>1번 · 참여 사례</th><th>2번 · 내 의견</th>
+        <th>㉠</th><th>㉡</th><th>㉢</th><th>㉣</th>
+        <th>사례</th><th>의견</th><th>총점</th><th>수준</th>
+        <th>채점 근거</th><th>피드백</th><th>세특 문장(초안)</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="c">1</td><td class="c">1번 학생</td>
+          <td class="ans">학생들이 스스로 예산을 세워서 학교의 일에 사용하였다.</td>
+          <td class="ans">우리 학교에도 학생들이 이렇게 참여하는 일이 많으면 좋겠다.</td>
+          <td class="c">●</td><td class="c">●</td><td class="c">●</td><td class="c">○</td>
+          <td class="c">2</td><td class="c">1</td><td class="c">3</td><td class="c"><span class="pill lv3">잘함</span></td>
+          <td class="reason">㉠ "학생들이"(참여한 사람) · ㉡ "예산을 세워 사용"(참여 행동, 기사의 학생참여예산제와 일치) · ㉢ "~좋겠다"(자기 의견) · ㉣ 까닭 없음(미달)</td>
+          <td class="fb">참여 사례를 정확히 찾고 자신의 생각도 밝혔어요. 이제 <b>까닭</b>을 한 문장 더 붙여요. 예: "왜냐하면 우리도 학교 일을 스스로 정하면 더 즐겁기 때문이다."</td>
+          <td class="sety">신문기사에서 학생 참여 사례(학생참여예산제로 예산을 세워 학교 일에 사용)를 정확히 찾아 누가 무엇을 했는지 파악함. 이에 대해 학교에도 학생 참여가 늘기를 바라는 자신의 의견을 분명히 밝힘. 의견의 까닭을 함께 제시하도록 지도하면 근거를 갖춘 글로 발전이 기대됨.</td>
+        </tr>
+        <tr class="excluded">
+          <td class="c">1</td><td class="c">1번 학생</td>
+          <td class="ans">(기사 문장을 그대로 옮겨 씀)</td>
+          <td class="ans">(기사 문장을 그대로 옮겨 씀)</td>
+          <td class="c">●</td><td class="c">●</td><td class="c">○</td><td class="c">○</td>
+          <td class="c">2</td><td class="c">0</td><td class="c">2</td><td class="c">제외</td>
+          <td class="reason">2번을 '내 의견'으로 바꾸기 전(옛 형식) 제출물. 의견·까닭 없음.</td>
+          <td class="fb">재제출 안내 권장.</td>
+          <td class="sety">— (옛 형식 테스트 응답, 채점·기록 제외)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="foot">
+    ● = 충족, ○ = 미달. 사례=㉠㉡(0~2), 의견=㉢㉣(0~2), 총점 4점.<br>
+    <b>※ 세특 문장은 학생 답에서 확인된 사실만으로 쓴 초안입니다. 반드시 교사가 검토·수정해 확정하세요.</b> AI는 제안만 하며, 결과물에 없는 내용은 추론하지 않습니다. 개인정보는 최소화하세요(이름 대신 번호 권장).
+  </p>
+</div>
+
+<script>
+  var ROWS=[
+    {no:'1',name:'1번 학생',q1:'학생들이 스스로 예산을 세워서 학교의 일에 사용하였다.',q2:'우리 학교에도 학생들이 이렇게 참여하는 일이 많으면 좋겠다.',ga:'●',na:'●',da:'●',ra:'○',e1:2,e2:1,total:3,level:'잘함',reason:'㉠ "학생들이" · ㉡ "예산을 세워 사용"(기사와 일치) · ㉢ "~좋겠다"(의견) · ㉣ 까닭 없음',fb:'참여 사례를 정확히 찾고 생각도 밝힘. 까닭(왜냐하면 ~ 때문이다)을 한 문장 더 붙이도록 지도.',sety:'신문기사에서 학생 참여 사례(학생참여예산제로 예산을 세워 학교 일에 사용)를 정확히 찾아 누가 무엇을 했는지 파악함. 이에 대해 학교에도 학생 참여가 늘기를 바라는 자신의 의견을 분명히 밝힘. 의견의 까닭을 함께 제시하도록 지도하면 근거를 갖춘 글로 발전이 기대됨.'}
+  ];
+  function say(t){var m=document.getElementById('msg');m.textContent=t||'';}
+  function csv(){
+    var head=['번호','이름','1번(참여 사례)','2번(내 의견)','㉠','㉡','㉢','㉣','사례','의견','총점','수준','채점 근거','피드백','세특 문장(초안)'];
+    var lines=[head];
+    ROWS.forEach(function(r){lines.push([r.no,r.name,r.q1,r.q2,r.ga,r.na,r.da,r.ra,r.e1,r.e2,r.total,r.level,r.reason,r.fb,r.sety]);});
+    return '﻿'+lines.map(function(row){return row.map(function(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"';}).join(',');}).join('\r\n');
+  }
+  var DL=null;
+  (async function(){ try{ DL=window.claude&&claude.use?await claude.use('downloads'):null; }catch(e){ DL=null; } })();
+  document.getElementById('csvBtn').addEventListener('click',async function(){
+    if(!DL){ say('브라우저 새 탭에서 열어 CSV를 저장하거나, Ctrl+P로 PDF로 저장하세요.'); return; }
+    try{ await DL.save({filename:'평가결과시트.csv',data:csv()}); say('CSV를 저장했어요 ✓'); }
+    catch(e){ if(e&&e.code!=='declined') say('저장을 못했어요. 브라우저 새 탭에서 다시 시도하세요.'); }
+  });
+  document.getElementById('printBtn').addEventListener('click',function(){ try{window.print();}catch(e){ say('인쇄가 막히면 키보드 Ctrl+P를 누르세요.'); } });
+</script>

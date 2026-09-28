@@ -16,3 +16,4 @@ npx skills@latest add mattpocock/skills --skill=<name>
 - **[setup-ts-deep-modules](./setup-ts-deep-modules/SKILL.md)**: Wire dependency-cruiser into a TypeScript repo so each package is a deep module: implementation hidden in subfolders, reachable only through its entry-point files, tests exercising it through those. User-invoked.
 - **[implement-spec](./implement-spec/SKILL.md)**: Implement a whole spec on one branch. Works the tickets as a task graph rather than a list, running implementer subagents across the ready frontier for maximum concurrency, and lands the result as a single PR. User-invoked.
 - **[assessment-design](./assessment-design/SKILL.md)**: 수업 아이디어에서 시작해 성취기준 기반 평가목표, 평가요소, 평가문항, 관찰 가능한 평가기준안까지 백워드 설계로 함께 만든다. 성취기준은 `curriculum/` 라이브러리 원문을 근거로만 쓴다. User-invoked.
+- **[progress-table](./progress-table/SKILL.md)**: 중·고등 교사가 과목별 진도표(연간·학기 운영 계획)를 짜도록 돕는다. 교과서 단원·주당 시수·학사일정을 받아 주차별로 단원·차시·쪽수·성취기준·평가를 배치한다. Model-invoked.

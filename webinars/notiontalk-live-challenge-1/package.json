@@ -1,0 +1,12 @@
+{
+  "name": "notiontalk-live-challenge-1-webinar",
+  "private": true,
+  "description": "노션톡 라이브 챌린지 1기 웨비나 PPT 생성 스크립트",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "dependencies": {
+    "pptxgenjs": "^4.0.1",
+    "qrcode": "^1.5.4"
+  }
+}

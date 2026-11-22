@@ -4,7 +4,7 @@ const fs = require("fs");
 const path = require("path");
 
 const SEC = path.join(__dirname, "assets");
-const OUT = process.argv[2] || path.join(__dirname, "notiontalk-live-challenge-webinar.pptx");
+const OUT = process.argv[2] || path.join(__dirname, "deck.pptx");
 const HUB = "https://judicious-ursinia-2c0.notion.site/2-412c5f01a4a4804cabd3c294d5d93fc9";
 const APPLY = "https://www.groble.im/products/qhawSP"; // live challenge sign-up page
 
@@ -540,6 +540,30 @@ function divider({ section, part, title, sub, ill, time, color, lab }) {
       { text: "11월 25일(수) 온보딩 전까지 준비할 것: ______________________" },
     ], { x: 0.7, y: 3.4, w: 8.6, h: 1.5, fontFace: FONT, fontSize: 15, color: COL.ink, paraSpaceAfter: 8, valign: "middle", margin: 0, isTextBox: true });
     s.addNotes("오늘 배운 네 가지를 다시 정리합니다. 채팅창에 자동화하고 싶은 업무와 쓸 기능을 남겨 주세요. 이것이 챌린지의 계획하기 단계입니다.");
+  }
+
+  // ===== 참여자 특전 =====
+  {
+    const s = newSlide("마무리");
+    header(s, "오늘 함께해 주신 선생님께", "참여자 특전", COL.mustard);
+    const perks = [
+      ["웨비나", "동영상 및 자료"],
+      ["교사들을 위한", "템플릿 10종"],
+      ["교사들을 위한", "노션 수식 모음집"],
+      ["나만의 템플릿 구축을 위한", "DB 커스터마이즈 1:1 피드백"],
+    ];
+    perks.forEach(([sub, main], i) => {
+      const y = 1.3 + i * 0.93;
+      s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.45, y, w: 5.25, h: 0.8, rectRadius: 0.08, fill: { color: COL.card }, line: { color: COL.mustard, width: 1.25 }, shadow: shadow() });
+      s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.62, y: y + 0.22, w: 0.95, h: 0.36, rectRadius: 0.06, fill: { color: COL.mustard }, line: { color: COL.mustard } });
+      s.addText(`특전 ${i + 1}`, { x: 0.62, y: y + 0.22, w: 0.95, h: 0.36, fontFace: FONT, fontSize: 12, bold: true, color: "FFFFFF", align: "center", valign: "middle", margin: 0, isTextBox: true });
+      s.addText([
+        { text: sub, options: { fontSize: 11, color: COL.sub, breakLine: true } },
+        { text: main, options: { fontSize: 17, bold: true, color: COL.ink } },
+      ], { x: 1.8, y: y + 0.06, w: 3.8, h: 0.68, fontFace: FONT, valign: "middle", margin: 0, isTextBox: true });
+    });
+    s.addImage({ path: img("perks"), x: 6.0, y: 1.3, w: 3.55, h: 3.55, altText: "노션톡 라이브 챌린지 무료 웨비나 2회차 참여자 특전 안내 이미지" });
+    s.addNotes("오늘 끝까지 함께해 주신 선생님들께 드리는 특전 네 가지입니다. 웨비나 동영상과 자료, 교사들을 위한 템플릿 10종, 노션 수식 모음집, 그리고 나만의 템플릿을 만들 때 DB 커스터마이즈 1:1 피드백까지 드려요. 받는 방법은 자료 페이지와 채팅창으로 안내해 드리겠습니다.");
   }
 
   // ===== Q&A · 마무리 =====

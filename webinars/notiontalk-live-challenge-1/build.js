@@ -22,7 +22,7 @@ const THEMES = {
   F: { name: "연필 스케치 차콜·세이지 + 고운돋움/Pretendard", head: "Gowun Dodum", body: "Pretendard",
        c: { bg: "FAFAF7", ink: "2B2B2B", sub: "6B6B6B", line: "DDDAD3", main: ["3F4A44", "ECEFEB"], ch: ["B08A3E", "F6EEDC"], p1: ["3F4A44", "ECEFEB"], p2: ["5E8C7A", "E3EFEA"], p3: ["A0674B", "F4E7DF"], adv: ["6F6A8F", "ECEBF3"] } },
 };
-const TH = THEMES[process.env.THEME || "A"];
+const TH = THEMES[process.env.THEME || "E"];
 const T = TH.c;
 const COL = {
   bg: T.bg || "FFFFFF", card: "FFFFFF", ink: T.ink, sub: T.sub, line: T.line,

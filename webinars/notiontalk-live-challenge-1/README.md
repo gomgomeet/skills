@@ -2,8 +2,8 @@
 
 곰곰이쌤의 「노션 자동화의 모든 것: 나만의 데이터베이스 자동화 완성하기」 웨비나 발표 자료입니다. 슬라이드는 47장입니다. 웨비나는 2026년 11월 22일(일) 저녁 8시, 강사는 곰곰이쌤입니다.
 
-- 색 구성: 오프닝·마무리 네이비, 라이브 챌린지 머스터드, PART 1 네이비, PART 2 청록, PART 3 코랄, 심화 보라
-- 글꼴: Pretendard (무료 글꼴). 발표할 컴퓨터에 설치되어 있지 않으면 PowerPoint가 다른 글꼴로 바꿔 보여 주므로 미리 설치하세요.
+- 디자인: E안 "스케치북 크림·코코아". 크림 바탕에 오프닝·PART 1·마무리 코코아 갈색, 라이브 챌린지 장미 분홍, PART 2 세이지 초록, PART 3 테라코타, 심화 보라
+- 글꼴: 제목 고운바탕, 본문 Pretendard (모두 무료 글꼴). 발표할 컴퓨터에 설치되어 있지 않으면 PowerPoint가 다른 글꼴로 바꿔 보여 주므로 미리 설치하세요.
 
 - 원본 노션 페이지: [노션 자동화 라이브 챌린지](https://judicious-ursinia-2c0.notion.site/412c5f01a4a4804cabd3c294d5d93fc9)
 - 완성본: [`notiontalk-live-challenge-webinar.pptx`](./notiontalk-live-challenge-webinar.pptx)
@@ -43,7 +43,7 @@ npm install
 npm run build
 ```
 
-- `build.js`: 슬라이드 내용과 디자인을 정의합니다. 색과 폰트 조합은 파일 위쪽 `THEMES`에 A~F 여섯 가지가 있고, `THEME=C npm run build`처럼 골라 만들 수 있습니다. 기본값은 A입니다.
+- `build.js`: 슬라이드 내용과 디자인을 정의합니다. 색과 폰트 조합은 파일 위쪽 `THEMES`에 A~F 여섯 가지가 있고, `THEME=C npm run build`처럼 골라 만들 수 있습니다. 기본값은 E입니다.
 - `assets/`: 노션 페이지 캡처(컬러), 일러스트, 곰돌이 캐릭터 이미지입니다. 파일 이름 앞부분은 페이지(`hub` 메인, `db` 데이터베이스 구성하기, `tpl` 템플릿, `bt` 버튼으로 템플릿 페이지 자동화, `blk` 블록 입력 자동화, `btn` 버튼 사용의 모든 것, `auto` 데이터베이스 자동화, `fx7` 수식 7가지), `s04`는 그 페이지의 4번째 소제목 구간입니다. `_a`, `_b`는 긴 캡처를 둘로 나눈 조각입니다.
 - `capture-tools/`: 노션 페이지를 다시 캡처할 때 쓰는 Playwright 스크립트입니다. 노션 내용이 바뀌면 `capture-sections.js`로 소제목 단위 캡처를 새로 만든 뒤 `assets/`를 교체하세요. 긴 페이지 끝부분이 잘리면 `capture-by-scroll.js`로 소제목을 지정해 캡처합니다.
 

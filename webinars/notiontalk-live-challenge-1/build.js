@@ -271,21 +271,27 @@ function divider({ section, part, title, sub, ill, time, color }) {
     const s = newSlide("오프닝");
     header(s, "5분 · 시작 전 세팅", "자료 페이지 열고 복제하기");
     const steps = [
-      ["QR 또는 채팅창 링크로 ‘노션 자동화 라이브 챌린지’ 페이지를 엽니다."],
+      ["QR 또는 아래 링크로 ‘노션 자동화 라이브 챌린지’ 페이지를 엽니다."],
       ["오른쪽 위 ‘복제’ 아이콘을 눌러 내 워크스페이스로 가져옵니다."],
       ["복제가 끝나면 채팅창에 ‘완료’를 남겨 주세요."],
     ];
     steps.forEach(([t], i) => {
-      const y = 1.35 + i * 1.18;
-      s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.45, y, w: 5.9, h: 1.0, rectRadius: 0.08, fill: { color: COL.card }, line: { color: COL.line }, shadow: shadow() });
-      s.addShape(pres.shapes.OVAL, { x: 0.65, y: y + 0.2, w: 0.6, h: 0.6, fill: { color: COL.accent }, line: { color: COL.accent } });
-      s.addText(String(i + 1), { x: 0.65, y: y + 0.2, w: 0.6, h: 0.6, fontFace: FONT, fontSize: 20, bold: true, color: "FFFFFF", align: "center", valign: "middle", margin: 0, isTextBox: true });
-      s.addText(t, { x: 1.45, y, w: 4.75, h: 1.0, fontFace: FONT, fontSize: 15, color: COL.ink, valign: "middle", margin: 0, isTextBox: true });
+      const y = 1.25 + i * 0.97;
+      s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.45, y, w: 5.9, h: 0.85, rectRadius: 0.08, fill: { color: COL.card }, line: { color: COL.line }, shadow: shadow() });
+      s.addShape(pres.shapes.OVAL, { x: 0.65, y: y + 0.15, w: 0.55, h: 0.55, fill: { color: COL.accent }, line: { color: COL.accent } });
+      s.addText(String(i + 1), { x: 0.65, y: y + 0.15, w: 0.55, h: 0.55, fontFace: FONT, fontSize: 18, bold: true, color: "FFFFFF", align: "center", valign: "middle", margin: 0, isTextBox: true });
+      s.addText(t, { x: 1.4, y, w: 4.8, h: 0.85, fontFace: FONT, fontSize: 15, color: COL.ink, valign: "middle", margin: 0, isTextBox: true });
     });
+    // live challenge page link (clickable)
+    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.45, y: 4.2, w: 5.9, h: 0.82, rectRadius: 0.08, fill: { color: COL.accentSoft }, line: { color: COL.accent, width: 1 } });
+    s.addText([
+      { text: "라이브 챌린지 자료 페이지 링크 (눌러서 열기)", options: { bold: true, color: COL.accent, fontSize: 13, breakLine: true } },
+      { text: HUB.replace("https://", ""), options: { color: COL.ink, fontSize: 12, underline: { style: "sng" }, hyperlink: { url: HUB, tooltip: "노션 자동화 라이브 챌린지 페이지 열기" } } },
+    ], { x: 0.65, y: 4.2, w: 5.6, h: 0.82, fontFace: FONT, valign: "middle", margin: 0, isTextBox: true });
     const qr = await QR.toDataURL(HUB, { margin: 1, width: 600, color: { dark: "1F2937", light: "FFFFFF" } });
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 6.7, y: 1.3, w: 2.85, h: 3.7, rectRadius: 0.1, fill: { color: COL.card }, line: { color: COL.accent, width: 1.5 } });
     s.addImage({ data: qr.replace("data:", ""), x: 6.95, y: 1.5, w: 2.35, h: 2.35, altText: "자료 페이지 QR 코드" });
-    s.addText("자료 페이지 QR", { x: 6.7, y: 3.95, w: 2.85, h: 0.4, fontFace: FONT, fontSize: 15, bold: true, color: COL.accent, align: "center", margin: 0, isTextBox: true });
+    s.addText([{ text: "자료 페이지 QR", options: { hyperlink: { url: HUB, tooltip: "노션 자동화 라이브 챌린지 페이지 열기" } } }], { x: 6.7, y: 3.95, w: 2.85, h: 0.4, fontFace: FONT, fontSize: 15, bold: true, color: COL.accent, align: "center", margin: 0, isTextBox: true });
     s.addText("휴대폰 카메라로 찍어도 열려요", { x: 6.7, y: 4.35, w: 2.85, h: 0.4, fontFace: FONT, fontSize: 12, color: COL.sub, align: "center", margin: 0, isTextBox: true });
     s.addNotes("온라인이라 낙오되는 분이 없도록 채팅창으로 완료를 확인합니다. 복제 버튼이 보이지 않으면 노션에 로그인되어 있는지 먼저 확인해 주세요. 링크는 채팅창에도 함께 올려 드립니다.");
   }

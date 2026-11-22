@@ -4,16 +4,36 @@ const fs = require("fs");
 const path = require("path");
 
 const SEC = path.join(__dirname, "assets");
-const OUT = process.argv[2] || path.join(__dirname, "notiontalk-live-challenge-1-webinar.pptx");
+const OUT = process.argv[2] || path.join(__dirname, "notiontalk-live-challenge-webinar.pptx");
 const HUB = "https://judicious-ursinia-2c0.notion.site/412c5f01a4a4804cabd3c294d5d93fc9";
 
 // ---------- palette ----------
-const COL = {
-  bg: "FFFFFF", card: "FFFFFF", ink: "111111", sub: "666666", accent: "111111",
-  accentSoft: "F2F2F2", green: "111111", greenSoft: "F2F2F2", line: "D6D6D6",
-  blue: "111111", blueSoft: "F2F2F2", purple: "111111", purpleSoft: "F2F2F2",
+const THEMES = {
+  A: { name: "네이비·머스터드 + Pretendard", head: "Pretendard", body: "Pretendard",
+       c: { ink: "1F2937", sub: "5B6474", line: "D5DDE8", main: ["2F5D8A", "E8EFF7"], ch: ["D99A1E", "FCF3DF"], p1: ["2F5D8A", "E8EFF7"], p2: ["2A8C82", "E3F3F1"], p3: ["D9644A", "FBE9E4"], adv: ["6B5B95", "EEEAF5"] } },
+  B: { name: "칠판 그린·크림 + 도현/본고딕", head: "Do Hyeon", body: "Noto Sans KR",
+       c: { ink: "22302A", sub: "5E6B63", line: "D9DFD6", main: ["2E6B4F", "E7F0EA"], ch: ["D9A21E", "FBF2DC"], p1: ["2E6B4F", "E7F0EA"], p2: ["3C7A9B", "E5EFF5"], p3: ["C8553D", "F8E6E1"], adv: ["7A5C99", "EFE9F4"] } },
+  C: { name: "곰곰이 코랄·피치 + 주아/고운돋움", head: "Jua", body: "Gowun Dodum",
+       c: { ink: "3D2C2E", sub: "7A6567", line: "EED9D2", main: ["E07A5F", "FCEBE4"], ch: ["E9A23B", "FDF1DC"], p1: ["E07A5F", "FCEBE4"], p2: ["3D9A8B", "E2F2EF"], p3: ["4F7CAC", "E5EDF6"], adv: ["8E6CB0", "F0E9F6"] } },
+  D: { name: "노션 모노·블루 + IBM Plex", head: "IBM Plex Sans KR", body: "IBM Plex Sans KR",
+       c: { ink: "191919", sub: "6B6B6B", line: "E3E2E0", main: ["2383E2", "E7F3F8"], ch: ["D9730D", "FBECDD"], p1: ["2383E2", "E7F3F8"], p2: ["0F7B6C", "DBEDDB"], p3: ["D9730D", "FBECDD"], adv: ["9065B0", "EAE4F2"] } },
 };
-const FONT = "맑은 고딕";
+const TH = THEMES[process.env.THEME || "A"];
+const T = TH.c;
+const COL = {
+  bg: "FFFFFF", card: "FFFFFF", ink: T.ink, sub: T.sub, line: T.line,
+  accent: T.main[0], accentSoft: T.main[1], mustard: T.ch[0], mustardSoft: T.ch[1],
+  blue: T.p1[0], blueSoft: T.p1[1], green: T.p2[0], greenSoft: T.p2[1],
+  coral: T.p3[0], coralSoft: T.p3[1], purple: T.adv[0], purpleSoft: T.adv[1],
+};
+const PAL = {
+  "오프닝": T.main, "라이브 챌린지": T.ch, "수업 목차": T.main,
+  "PART 1 DB와 템플릿": T.p1, "PART 2 버튼 자동화": T.p2,
+  "PART 3 DB 자동화": T.p3, "심화": T.adv, "마무리": T.main,
+};
+const FONT = TH.body;
+const HFONT = TH.head;
+const HBOLD = !["Do Hyeon", "Jua"].includes(TH.head); // display fonts already heavy: no faux bold
 
 // read PNG size from header
 function pngSize(file) {
@@ -24,9 +44,9 @@ function img(name) { return path.join(SEC, name + ".png"); }
 
 const pres = new pptxgen();
 pres.layout = "LAYOUT_16x9";
-pres.author = "곰곰이쌤 이혜경";
-pres.title = "노션톡 라이브 챌린지 1기 웨비나: 노션 자동화의 모든 것";
-pres.theme = { headFontFace: FONT, bodyFontFace: FONT };
+pres.author = "곰곰이쌤";
+pres.title = "노션톡 라이브 챌린지 2기 웨비나: 노션 자동화의 모든 것";
+pres.theme = { headFontFace: HFONT, bodyFontFace: FONT };
 
 let pageNo = 0; let lastSec = null;
 function newSlide(section) {
@@ -34,7 +54,7 @@ function newSlide(section) {
   const s = pres.addSlide({ sectionTitle: section });
   s.background = { color: COL.bg };
   pageNo++;
-  s.addText(`노션톡 라이브 챌린지 1기 · 곰곰이쌤    ${pageNo}`, {
+  s.addText(`노션톡 라이브 챌린지 2기 · 곰곰이쌤    ${pageNo}`, {
     x: 6.2, y: 5.12, w: 3.5, h: 0.2, fontFace: FONT, fontSize: 9, color: COL.sub,
     align: "right", margin: 0, isTextBox: true,
   });
@@ -42,7 +62,7 @@ function newSlide(section) {
 }
 function header(s, kicker, title, color = COL.accent) {
   if (kicker) s.addText(kicker, { x: 0.45, y: 0.28, w: 6, h: 0.28, fontFace: FONT, fontSize: 12, bold: true, color, margin: 0, isTextBox: true });
-  s.addText(title, { x: 0.45, y: 0.56, w: 9.1, h: 0.56, fontFace: FONT, fontSize: 24, bold: true, color: COL.ink, margin: 0, valign: "middle", isTextBox: true });
+  s.addText(title, { x: 0.45, y: 0.56, w: 9.1, h: 0.56, fontFace: HFONT, fontSize: 24, bold: HBOLD, color: COL.ink, margin: 0, valign: "middle", isTextBox: true });
 }
 function shadow() { return { type: "outer", color: "000000", blur: 6, offset: 2, angle: 90, opacity: 0.12 }; }
 
@@ -59,7 +79,8 @@ function framedImage(s, file, box) {
 }
 
 // standard capture slide: left = key message, right = Notion capture
-function capSlide({ section, kicker, title, lead, points = [], tip, image, notes, color = COL.accent, soft = COL.accentSoft }) {
+function capSlide({ section, kicker, title, lead, points = [], tip, image, notes, color, soft }) {
+  color = color || (PAL[section] || [COL.accent])[0]; soft = soft || (PAL[section] || [0, COL.accentSoft])[1];
   const s = newSlide(section);
   header(s, kicker, title, color);
   const sz = pngSize(image);
@@ -98,11 +119,12 @@ function capSlide({ section, kicker, title, lead, points = [], tip, image, notes
   return s;
 }
 
-function divider({ section, part, title, sub, ill, time, color = COL.accent }) {
+function divider({ section, part, title, sub, ill, time, color }) {
+  color = color || (PAL[section] || [COL.accent])[0];
   const s = newSlide(section);
   s.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: 4.3, h: 5.625, fill: { color }, line: { color } });
-  s.addText(part, { x: 0.5, y: 1.3, w: 3.4, h: 0.5, fontFace: FONT, fontSize: 18, bold: true, color: "FFFFFF", margin: 0, isTextBox: true });
-  s.addText(title, { x: 0.5, y: 1.85, w: 3.5, h: 1.4, fontFace: FONT, fontSize: 30, bold: true, color: "FFFFFF", margin: 0, valign: "top", isTextBox: true });
+  s.addText(part, { x: 0.5, y: 1.3, w: 3.4, h: 0.5, fontFace: HFONT, fontSize: 18, bold: HBOLD, color: "FFFFFF", margin: 0, isTextBox: true });
+  s.addText(title, { x: 0.5, y: 1.85, w: 3.5, h: 1.4, fontFace: HFONT, fontSize: 30, bold: HBOLD, color: "FFFFFF", margin: 0, valign: "top", isTextBox: true });
   if (time) {
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.5, y: 3.5, w: 1.6, h: 0.45, rectRadius: 0.2, fill: { color: "FFFFFF" }, line: { color: "FFFFFF" } });
     s.addText(time, { x: 0.5, y: 3.5, w: 1.6, h: 0.45, fontFace: FONT, fontSize: 14, bold: true, color, align: "center", valign: "middle", margin: 0, isTextBox: true });
@@ -118,28 +140,28 @@ function divider({ section, part, title, sub, ill, time, color = COL.accent }) {
     const s = newSlide("오프닝");
     s.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: 10, h: 0.18, fill: { color: COL.accent }, line: { color: COL.accent } });
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.6, y: 0.75, w: 3.3, h: 0.45, rectRadius: 0.2, fill: { color: COL.accentSoft }, line: { color: COL.accentSoft } });
-    s.addText("노션톡 라이브 챌린지 1기 · 웨비나", { x: 0.6, y: 0.75, w: 3.3, h: 0.45, fontFace: FONT, fontSize: 14, bold: true, color: COL.accent, align: "center", valign: "middle", margin: 0, isTextBox: true });
-    s.addText("노션 자동화의 모든 것", { x: 0.6, y: 1.4, w: 6.6, h: 0.9, fontFace: FONT, fontSize: 40, bold: true, color: COL.ink, margin: 0, isTextBox: true });
+    s.addText("노션톡 라이브 챌린지 2기 · 웨비나", { x: 0.6, y: 0.75, w: 3.3, h: 0.45, fontFace: FONT, fontSize: 14, bold: true, color: COL.accent, align: "center", valign: "middle", margin: 0, isTextBox: true });
+    s.addText("노션 자동화의 모든 것", { x: 0.6, y: 1.4, w: 6.6, h: 0.9, fontFace: HFONT, fontSize: 40, bold: HBOLD, color: COL.ink, margin: 0, isTextBox: true });
     s.addText("템플릿 · 버튼 · 데이터베이스 자동화로\n나만의 데이터베이스 자동화 완성하기", { x: 0.6, y: 2.35, w: 6.6, h: 0.95, fontFace: FONT, fontSize: 18, color: COL.sub, margin: 0, isTextBox: true });
     s.addShape(pres.shapes.LINE, { x: 0.6, y: 3.6, w: 5.2, h: 0, line: { color: COL.line, width: 1.5 } });
     s.addText([
       { text: "대상  ", options: { bold: true } }, { text: "노션으로 반복 업무를 줄이고 싶은 선생님 (온라인 라이브)", options: { breakLine: true } },
-      { text: "일시  ", options: { bold: true } }, { text: "20__년 __월 __일 (__) __:__ ~ __:__", options: { breakLine: true } },
-      { text: "강사  ", options: { bold: true } }, { text: "곰곰이쌤 이혜경 (단샘초등학교 교사 · Notion Creator)" },
+      { text: "일시  ", options: { bold: true } }, { text: "2026년 11월 22일 (일) 저녁 8:00 ~ 9:30", options: { breakLine: true } },
+      { text: "강사  ", options: { bold: true } }, { text: "곰곰이쌤 (단샘초등학교 교사 · Notion Creator)" },
     ], { x: 0.6, y: 3.75, w: 6.6, h: 1.2, fontFace: FONT, fontSize: 14, color: COL.ink, margin: 0, paraSpaceAfter: 4, isTextBox: true });
     s.addImage({ path: img("gomgom-bear"), x: 7.35, y: 0.55, w: 2.25, h: 2.25, altText: "곰곰이쌤 곰돌이 캐릭터" });
     const ia = pngSize(img("ill_auto"));
     s.addImage({ path: img("ill_auto"), x: 7.0, y: 3.05, w: 2.6, h: 2.6 * ia.h / ia.w, altText: "데이터베이스 자동화 일러스트" });
-    s.addNotes("반갑습니다. 노션톡 라이브 챌린지 1기 웨비나에 오신 선생님들 환영합니다. 오늘은 교사로서 노션을 활용하는 큰 그림을 먼저 보고, 데이터베이스와 템플릿, 버튼 자동화, 데이터베이스 자동화를 차례로 배웁니다. 마지막에는 다음 주부터 시작하는 라이브 챌린지를 안내합니다.");
+    s.addNotes("반갑습니다. 노션톡 라이브 챌린지 2기 웨비나에 오신 선생님들 환영합니다. 오늘은 교사로서 노션을 활용하는 큰 그림을 먼저 보고, 데이터베이스와 템플릿, 버튼 자동화, 데이터베이스 자동화를 차례로 배웁니다. 마지막에는 다음 주부터 시작하는 라이브 챌린지를 안내합니다.");
   }
 
   // ===== 2. 강사 소개 =====
   {
     const s = newSlide("오프닝");
-    header(s, "강사 소개", "곰곰이쌤 이혜경입니다");
+    header(s, "강사 소개", "곰곰이쌤입니다");
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.45, y: 1.3, w: 4.35, h: 3.7, rectRadius: 0.1, fill: { color: COL.accentSoft }, line: { color: COL.accentSoft } });
     s.addImage({ path: img("gomgom-bear"), x: 0.7, y: 1.5, w: 1.15, h: 1.15, altText: "곰곰이쌤 캐릭터" });
-    s.addText([{ text: "이혜경", options: { fontSize: 22, bold: true, breakLine: true } }, { text: "단샘초등학교 교사 · 교육경력 25년", options: { fontSize: 14, color: COL.sub } }], { x: 2.0, y: 1.55, w: 2.7, h: 1.05, fontFace: FONT, color: COL.ink, valign: "middle", margin: 0, isTextBox: true });
+    s.addText([{ text: "곰곰이쌤", options: { fontSize: 22, bold: true, breakLine: true } }, { text: "단샘초등학교 교사 · 교육경력 25년", options: { fontSize: 14, color: COL.sub } }], { x: 2.0, y: 1.55, w: 2.7, h: 1.05, fontFace: FONT, color: COL.ink, valign: "middle", margin: 0, isTextBox: true });
     s.addText([
       { text: "Notion Creator · 지식샘터 노션 강사", options: { bullet: true, breakLine: true } },
       { text: "네이버 블로그 ‘곰곰이쌤’", options: { bullet: true, breakLine: true } },
@@ -182,14 +204,14 @@ function divider({ section, part, title, sub, ill, time, color = COL.accent }) {
     ];
     steps.forEach(([n, h, d, ex], i) => {
       const x = 0.45 + i * 3.07;
-      s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y: 1.3, w: 2.9, h: 2.7, rectRadius: 0.08, fill: { color: i === 2 ? COL.ink : COL.accentSoft }, line: { color: i === 2 ? COL.ink : COL.accentSoft } });
+      s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y: 1.3, w: 2.9, h: 2.7, rectRadius: 0.08, fill: { color: i === 2 ? COL.accent : COL.accentSoft }, line: { color: i === 2 ? COL.accent : COL.accentSoft } });
       const fg = i === 2 ? "FFFFFF" : COL.ink;
       s.addText(n, { x: x + 0.2, y: 1.42, w: 0.6, h: 0.6, fontFace: FONT, fontSize: 28, bold: true, color: fg, margin: 0, isTextBox: true });
       s.addText(h, { x: x + 0.2, y: 2.05, w: 2.5, h: 0.45, fontFace: FONT, fontSize: 20, bold: true, color: fg, margin: 0, isTextBox: true });
       s.addText(d, { x: x + 0.2, y: 2.55, w: 2.5, h: 0.6, fontFace: FONT, fontSize: 14, color: fg, valign: "top", margin: 0, isTextBox: true });
-      s.addText("예) " + ex, { x: x + 0.2, y: 3.2, w: 2.5, h: 0.7, fontFace: FONT, fontSize: 13, color: i === 2 ? "DDDDDD" : COL.sub, valign: "top", margin: 0, isTextBox: true });
+      s.addText("예) " + ex, { x: x + 0.2, y: 3.2, w: 2.5, h: 0.7, fontFace: FONT, fontSize: 13, color: i === 2 ? "DCE6F2" : COL.sub, valign: "top", margin: 0, isTextBox: true });
     });
-    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.45, y: 4.15, w: 9.1, h: 0.85, rectRadius: 0.08, fill: { color: COL.card }, line: { color: COL.ink, width: 1.25, dashType: "dash" } });
+    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.45, y: 4.15, w: 9.1, h: 0.85, rectRadius: 0.08, fill: { color: COL.card }, line: { color: COL.accent, width: 1.25, dashType: "dash" } });
     s.addText("노션이 사랑받는 이유는 반복 업무를 자동화하는 시스템 덕분이에요. 오늘은 3단계 '자동화하기'의 바탕이 되는 템플릿, 버튼, 데이터베이스 자동화를 하나씩 배웁니다.", { x: 0.65, y: 4.15, w: 8.7, h: 0.85, fontFace: FONT, fontSize: 14, color: COL.ink, valign: "middle", margin: 0, isTextBox: true });
     s.addNotes("교사가 노션을 쓰는 단계를 세 가지로 나눠 보면, 기록하기, 관리하기, 자동화하기입니다. 처음에는 페이지에 적는 것부터 시작하지만, 데이터베이스로 모으고, 템플릿과 버튼으로 반복을 줄이면 업무가 눈에 띄게 가벼워집니다. 예를 들어 출결·상담·관찰 기록을 버튼 하나로 입력하고 학생 페이지에서 한 번에 모아 볼 수 있습니다.");
   }
@@ -209,12 +231,12 @@ function divider({ section, part, title, sub, ill, time, color = COL.accent }) {
       s.addText(h, { x: x + 0.2, y: 1.42, w: 2.5, h: 0.4, fontFace: FONT, fontSize: 16, bold: true, color: COL.ink, margin: 0, isTextBox: true });
       s.addText(t, { x: x + 0.2, y: 1.85, w: 2.5, h: 1.3, fontFace: FONT, fontSize: 14, color: COL.ink, valign: "middle", margin: 0, isTextBox: true });
     });
-    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.45, y: 3.45, w: 9.1, h: 1.55, rectRadius: 0.08, fill: { color: COL.card }, line: { color: COL.ink, width: 1.5 } });
+    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.45, y: 3.45, w: 9.1, h: 1.55, rectRadius: 0.08, fill: { color: COL.card }, line: { color: COL.accent, width: 1.5 } });
     s.addText("오늘 들고 가실 것", { x: 0.7, y: 3.55, w: 3, h: 0.4, fontFace: FONT, fontSize: 16, bold: true, color: COL.ink, margin: 0, isTextBox: true });
     const outs = ["자료 페이지 복제본", "내 업무 DB 아이디어 1개", "버튼·자동화 설계 1개", "챌린지 계획(계획하기)"];
     outs.forEach((t, i) => {
       const x = 0.7 + i * 2.2;
-      s.addShape(pres.shapes.OVAL, { x, y: 4.1, w: 0.5, h: 0.5, fill: { color: COL.ink }, line: { color: COL.ink } });
+      s.addShape(pres.shapes.OVAL, { x, y: 4.1, w: 0.5, h: 0.5, fill: { color: COL.accent }, line: { color: COL.accent } });
       s.addText(String(i + 1), { x, y: 4.1, w: 0.5, h: 0.5, fontFace: FONT, fontSize: 16, bold: true, color: "FFFFFF", align: "center", valign: "middle", margin: 0, isTextBox: true });
       s.addText(t, { x: x + 0.58, y: 3.98, w: 1.55, h: 0.75, fontFace: FONT, fontSize: 13, color: COL.ink, valign: "middle", margin: 0, isTextBox: true });
     });
@@ -234,8 +256,8 @@ function divider({ section, part, title, sub, ill, time, color = COL.accent }) {
       ["1:15~1:25", "심화", "꼭 활용하면 좋은 노션 수식 7가지", "수식 1개"],
       ["1:25~1:30", "Q&A · 마무리", "질문, 적용 계획 공유", "다음 주 적용 1가지"],
     ];
-    const head = ["시간", "블록", "활동", "산출물"].map(t => ({ text: t, options: { bold: true, color: "FFFFFF", fill: { color: COL.ink }, align: "center" } }));
-    const body = rows.map((r, i) => r.map((t, j) => ({ text: t, options: { color: COL.ink, bold: j === 1, fill: { color: i % 2 ? "FFFFFF" : "F5F5F5" }, align: j === 0 ? "center" : "left" } })));
+    const head = ["시간", "블록", "활동", "산출물"].map(t => ({ text: t, options: { bold: true, color: "FFFFFF", fill: { color: COL.accent }, align: "center" } }));
+    const body = rows.map((r, i) => r.map((t, j) => ({ text: t, options: { color: COL.ink, bold: j === 1, fill: { color: i % 2 ? "FFFFFF" : COL.accentSoft }, align: j === 0 ? "center" : "left" } })));
     s.addTable([head, ...body], { x: 0.45, y: 1.25, w: 9.1, colW: [1.35, 2.25, 3.4, 2.1], rowH: 0.46, fontFace: FONT, fontSize: 13, border: { type: "solid", pt: 0.75, color: COL.line }, valign: "middle", margin: [0, 0.08, 0, 0.08] });
     s.addNotes("90분 기준 타임테이블입니다. 실제 웨비나 시간에 맞춰 조정하세요. PART 2가 가장 길고, 심화는 시간이 부족하면 자료 안내로 대신해도 됩니다.");
   }
@@ -256,7 +278,7 @@ function divider({ section, part, title, sub, ill, time, color = COL.accent }) {
       s.addText(String(i + 1), { x: 0.65, y: y + 0.2, w: 0.6, h: 0.6, fontFace: FONT, fontSize: 20, bold: true, color: "FFFFFF", align: "center", valign: "middle", margin: 0, isTextBox: true });
       s.addText(t, { x: 1.45, y, w: 4.75, h: 1.0, fontFace: FONT, fontSize: 15, color: COL.ink, valign: "middle", margin: 0, isTextBox: true });
     });
-    const qr = await QR.toDataURL(HUB, { margin: 1, width: 600, color: { dark: "000000", light: "FFFFFF" } });
+    const qr = await QR.toDataURL(HUB, { margin: 1, width: 600, color: { dark: "1F2937", light: "FFFFFF" } });
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 6.7, y: 1.3, w: 2.85, h: 3.7, rectRadius: 0.1, fill: { color: COL.card }, line: { color: COL.accent, width: 1.5 } });
     s.addImage({ data: qr.replace("data:", ""), x: 6.95, y: 1.5, w: 2.35, h: 2.35, altText: "자료 페이지 QR 코드" });
     s.addText("자료 페이지 QR", { x: 6.7, y: 3.95, w: 2.85, h: 0.4, fontFace: FONT, fontSize: 15, bold: true, color: COL.accent, align: "center", margin: 0, isTextBox: true });
@@ -270,8 +292,8 @@ function divider({ section, part, title, sub, ill, time, color = COL.accent }) {
   {
     const s = newSlide("라이브 챌린지");
     header(s, "라이브 챌린지 활동 안내", "오늘 배운 내용을 내 업무에 적용해요");
-    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.45, y: 1.25, w: 9.1, h: 0.95, rectRadius: 0.08, fill: { color: COL.ink }, line: { color: COL.ink } });
-    s.addText([{ text: "라이브 챌린지 온보딩   ", options: { bold: true, fontSize: 18 } }, { text: "11월 25일(수) 저녁 8:00 ~ 8:30", options: { bold: true, fontSize: 18, breakLine: true } }, { text: "챌린지 진행 방법과 인증 방법을 안내합니다.", options: { fontSize: 13, color: "DDDDDD" } }], { x: 0.7, y: 1.25, w: 8.7, h: 0.95, fontFace: FONT, color: "FFFFFF", valign: "middle", margin: 0, isTextBox: true });
+    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.45, y: 1.25, w: 9.1, h: 0.95, rectRadius: 0.08, fill: { color: COL.mustard }, line: { color: COL.mustard } });
+    s.addText([{ text: "라이브 챌린지 온보딩   ", options: { bold: true, fontSize: 18 } }, { text: "11월 25일(수) 저녁 8:00 ~ 8:30", options: { bold: true, fontSize: 18, breakLine: true } }, { text: "챌린지 진행 방법과 인증 방법을 안내합니다.", options: { fontSize: 13, color: "FFF6E3" } }], { x: 0.7, y: 1.25, w: 8.7, h: 0.95, fontFace: FONT, color: "FFFFFF", valign: "middle", margin: 0, isTextBox: true });
     const st = [
       ["1. 계획하기", "내 반복 업무 찾기", "자동화하고 싶은 업무를 고르고 템플릿·버튼·DB 자동화 중 무엇을 쓸지 정해요."],
       ["2. 적용하기", "내 DB에 직접 만들기", "데이터베이스와 템플릿을 만들고 버튼 또는 자동화를 1개 이상 작동시켜요."],
@@ -307,10 +329,10 @@ function divider({ section, part, title, sub, ill, time, color = COL.accent }) {
       s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y: 1.25, w: 2.9, h: 3.25, rectRadius: 0.08, fill: { color: COL.card }, line: { color: COL.line }, shadow: shadow() });
       const sz = pngSize(img(im));
       s.addImage({ path: img(im), x: x + 0.15, y: 1.35, w: 2.6, h: 2.6 * sz.h / sz.w, altText: h + " 일러스트" });
-      s.addText([{ text: p + "  ", options: { bold: true, color: COL.sub } }, { text: h, options: { bold: true } }], { x: x + 0.15, y: 2.85, w: 2.6, h: 0.42, fontFace: FONT, fontSize: 15, color: COL.ink, margin: 0, isTextBox: true });
+      s.addText([{ text: p + "  ", options: { bold: true, color: [COL.blue, COL.green, COL.coral][i] } }, { text: h, options: { bold: true } }], { x: x + 0.15, y: 2.85, w: 2.6, h: 0.42, fontFace: FONT, fontSize: 15, color: COL.ink, margin: 0, isTextBox: true });
       s.addText([{ text: "언제? ", options: { bold: true } }, { text: when, options: { breakLine: true } }, { text: what, options: { color: COL.sub } }], { x: x + 0.15, y: 3.3, w: 2.6, h: 1.1, fontFace: FONT, fontSize: 13, color: COL.ink, valign: "top", margin: 0, isTextBox: true });
     });
-    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.45, y: 4.62, w: 9.1, h: 0.42, rectRadius: 0.08, fill: { color: COL.accentSoft }, line: { color: COL.accentSoft } });
+    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.45, y: 4.62, w: 9.1, h: 0.42, rectRadius: 0.08, fill: { color: COL.purpleSoft }, line: { color: COL.purpleSoft } });
     s.addText([{ text: "심화  ", options: { bold: true } }, { text: "버튼 수식 · 변수 정의 · 꼭 활용하면 좋은 노션 수식 7가지" }], { x: 0.65, y: 4.62, w: 8.7, h: 0.42, fontFace: FONT, fontSize: 13, color: COL.ink, valign: "middle", margin: 0, isTextBox: true });
     s.addNotes("오늘 배울 기능을 스위치로 생각해 보세요. 템플릿은 만들 때 켜지는 스위치, 버튼은 직접 누르는 스위치, 데이터베이스 자동화는 트리거가 생기면 저절로 켜지는 스위치입니다. 시간이 되면 심화로 버튼 수식과 변수, 꼭 활용하면 좋은 수식 7가지를 살펴봅니다.");
   }
@@ -461,7 +483,7 @@ function divider({ section, part, title, sub, ill, time, color = COL.accent }) {
     items.forEach(([ic, h, t], i) => {
       const x = 0.45 + (i % 2) * 4.62, y = 1.25 + Math.floor(i / 2) * 1.9;
       s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w: 4.48, h: 1.75, rectRadius: 0.08, fill: { color: COL.card }, line: { color: COL.line }, shadow: shadow() });
-      s.addShape(pres.shapes.OVAL, { x: x + 0.2, y: y + 0.18, w: 0.55, h: 0.55, fill: { color: COL.ink }, line: { color: COL.ink } });
+      s.addShape(pres.shapes.OVAL, { x: x + 0.2, y: y + 0.18, w: 0.55, h: 0.55, fill: { color: COL.coral }, line: { color: COL.coral } });
       s.addText(ic, { x: x + 0.2, y: y + 0.18, w: 0.55, h: 0.55, fontFace: FONT, fontSize: 14, bold: true, color: "FFFFFF", align: "center", valign: "middle", margin: 0, isTextBox: true });
       s.addText(h, { x: x + 0.85, y: y + 0.15, w: 3.5, h: 0.5, fontFace: FONT, fontSize: 16, bold: true, color: COL.accent, valign: "middle", margin: 0, isTextBox: true });
       s.addText(t, { x: x + 0.85, y: y + 0.65, w: 3.5, h: 1.0, fontFace: FONT, fontSize: 13, color: COL.ink, valign: "middle", margin: 0, isTextBox: true });
@@ -476,13 +498,14 @@ function divider({ section, part, title, sub, ill, time, color = COL.accent }) {
     const s = newSlide("마무리");
     header(s, "정리", "오늘 배운 것, 이렇게 이어 가요");
     const flow = [["템플릿", "만들 때 자동으로"], ["버튼", "누를 때 한 번에"], ["DB 자동화", "트리거가 생기면 저절로"], ["수식·변수", "누르는 순간 계산"]];
+    const fsoft = [COL.blueSoft, COL.greenSoft, COL.coralSoft, COL.purpleSoft];
     flow.forEach(([h, t], i) => {
       const x = 0.45 + i * 2.32;
-      s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y: 1.3, w: 2.05, h: 1.25, rectRadius: 0.08, fill: { color: COL.accentSoft }, line: { color: COL.accentSoft } });
+      s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y: 1.3, w: 2.05, h: 1.25, rectRadius: 0.08, fill: { color: fsoft[i] }, line: { color: fsoft[i] } });
       s.addText([{ text: h, options: { bold: true, fontSize: 16, breakLine: true } }, { text: t, options: { fontSize: 13 } }], { x, y: 1.3, w: 2.05, h: 1.25, fontFace: FONT, color: COL.ink, align: "center", valign: "middle", margin: 0, isTextBox: true });
       if (i < 3) s.addText("→", { x: x + 2.05, y: 1.3, w: 0.27, h: 1.25, fontSize: 18, bold: true, color: COL.ink, align: "center", valign: "middle", margin: 0, isTextBox: true });
     });
-    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.45, y: 2.8, w: 9.1, h: 2.2, rectRadius: 0.08, fill: { color: COL.card }, line: { color: COL.ink, width: 1.5, dashType: "dash" } });
+    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.45, y: 2.8, w: 9.1, h: 2.2, rectRadius: 0.08, fill: { color: COL.card }, line: { color: COL.mustard, width: 1.5, dashType: "dash" } });
     s.addText("채팅창에 남겨 주세요: 나의 챌린지 계획하기", { x: 0.7, y: 2.92, w: 8.6, h: 0.45, fontFace: FONT, fontSize: 16, bold: true, color: COL.ink, margin: 0, isTextBox: true });
     s.addText([
       { text: "자동화하고 싶은 반복 업무: ______________________", options: { breakLine: true } },
@@ -497,14 +520,14 @@ function divider({ section, part, title, sub, ill, time, color = COL.accent }) {
     const s = newSlide("마무리");
     s.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: 10, h: 0.18, fill: { color: COL.accent }, line: { color: COL.accent } });
     s.addImage({ path: img("gomgom-bear"), x: 0.7, y: 1.0, w: 2.6, h: 2.6, altText: "곰곰이쌤 캐릭터" });
-    s.addText("Q & A", { x: 3.7, y: 1.0, w: 5.8, h: 0.9, fontFace: FONT, fontSize: 40, bold: true, color: COL.accent, margin: 0, isTextBox: true });
+    s.addText("Q & A", { x: 3.7, y: 1.0, w: 5.8, h: 0.9, fontFace: HFONT, fontSize: 40, bold: HBOLD, color: COL.accent, margin: 0, isTextBox: true });
     s.addText("혼자 하기 어려운 자동화, 라이브 챌린지로 함께 완성해요!", { x: 3.7, y: 1.95, w: 5.8, h: 0.6, fontFace: FONT, fontSize: 20, bold: true, color: COL.ink, margin: 0, isTextBox: true });
     s.addText([
       { text: "자료 페이지: 노션 자동화 라이브 챌린지", options: { breakLine: true } },
       { text: "커뮤니티: 노션톡 · 블로그: 곰곰이쌤", options: { breakLine: true } },
       { text: "챌린지 온보딩: 11월 25일(수) 저녁 8:00~8:30" },
     ], { x: 3.7, y: 2.7, w: 5.8, h: 1.3, fontFace: FONT, fontSize: 15, color: COL.sub, paraSpaceAfter: 6, margin: 0, isTextBox: true });
-    s.addText("감사합니다 · 곰곰이쌤 이혜경", { x: 3.7, y: 4.35, w: 5.8, h: 0.45, fontFace: FONT, fontSize: 16, bold: true, color: COL.ink, margin: 0, isTextBox: true });
+    s.addText("감사합니다 · 곰곰이쌤", { x: 3.7, y: 4.35, w: 5.8, h: 0.45, fontFace: FONT, fontSize: 16, bold: true, color: COL.ink, margin: 0, isTextBox: true });
     s.addNotes("궁금한 점을 채팅창에 남겨 주세요. 웨비나 이후 질문은 노션톡 커뮤니티에 올려 주시면 함께 답해 드립니다. 라이브 챌린지에서 함께 완성해 봐요. 감사합니다.");
   }
 

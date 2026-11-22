@@ -17,11 +17,15 @@ const THEMES = {
        c: { ink: "3D2C2E", sub: "7A6567", line: "EED9D2", main: ["E07A5F", "FCEBE4"], ch: ["E9A23B", "FDF1DC"], p1: ["E07A5F", "FCEBE4"], p2: ["3D9A8B", "E2F2EF"], p3: ["4F7CAC", "E5EDF6"], adv: ["8E6CB0", "F0E9F6"] } },
   D: { name: "노션 모노·블루 + IBM Plex", head: "IBM Plex Sans KR", body: "IBM Plex Sans KR",
        c: { ink: "191919", sub: "6B6B6B", line: "E3E2E0", main: ["2383E2", "E7F3F8"], ch: ["D9730D", "FBECDD"], p1: ["2383E2", "E7F3F8"], p2: ["0F7B6C", "DBEDDB"], p3: ["D9730D", "FBECDD"], adv: ["9065B0", "EAE4F2"] } },
+  E: { name: "스케치북 크림·코코아 + 고운바탕/Pretendard", head: "Gowun Batang", body: "Pretendard",
+       c: { bg: "FBF7F0", ink: "3B2F2A", sub: "7A6A60", line: "E6DCCF", main: ["8C5A3C", "F3E8DC"], ch: ["D27D6B", "FBE7E2"], p1: ["8C5A3C", "F3E8DC"], p2: ["6E8B6B", "E7EFE5"], p3: ["C97B5A", "F7E6DC"], adv: ["7D6A99", "EEE9F3"] } },
+  F: { name: "연필 스케치 차콜·세이지 + 고운돋움/Pretendard", head: "Gowun Dodum", body: "Pretendard",
+       c: { bg: "FAFAF7", ink: "2B2B2B", sub: "6B6B6B", line: "DDDAD3", main: ["3F4A44", "ECEFEB"], ch: ["B08A3E", "F6EEDC"], p1: ["3F4A44", "ECEFEB"], p2: ["5E8C7A", "E3EFEA"], p3: ["A0674B", "F4E7DF"], adv: ["6F6A8F", "ECEBF3"] } },
 };
 const TH = THEMES[process.env.THEME || "A"];
 const T = TH.c;
 const COL = {
-  bg: "FFFFFF", card: "FFFFFF", ink: T.ink, sub: T.sub, line: T.line,
+  bg: T.bg || "FFFFFF", card: "FFFFFF", ink: T.ink, sub: T.sub, line: T.line,
   accent: T.main[0], accentSoft: T.main[1], mustard: T.ch[0], mustardSoft: T.ch[1],
   blue: T.p1[0], blueSoft: T.p1[1], green: T.p2[0], greenSoft: T.p2[1],
   coral: T.p3[0], coralSoft: T.p3[1], purple: T.adv[0], purpleSoft: T.adv[1],
@@ -33,7 +37,7 @@ const PAL = {
 };
 const FONT = TH.body;
 const HFONT = TH.head;
-const HBOLD = !["Do Hyeon", "Jua"].includes(TH.head); // display fonts already heavy: no faux bold
+const HBOLD = !["Do Hyeon", "Jua", "Gowun Dodum"].includes(TH.head); // display fonts already heavy: no faux bold
 
 // read PNG size from header
 function pngSize(file) {

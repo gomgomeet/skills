@@ -7,6 +7,7 @@
 
 - 원본 노션 페이지: [노션 자동화 라이브 챌린지](https://judicious-ursinia-2c0.notion.site/412c5f01a4a4804cabd3c294d5d93fc9)
 - 완성본: [`notiontalk-live-challenge-webinar.pptx`](./notiontalk-live-challenge-webinar.pptx)
+- 홍보 이미지(4:3): [`promo-4x3.png`](./promo-4x3.png), 라이브 챌린지 신청 링크와 QR 포함
 
 ## 슬라이드 구성 (90분 기준)
 

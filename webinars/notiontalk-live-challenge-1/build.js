@@ -6,6 +6,7 @@ const path = require("path");
 const SEC = path.join(__dirname, "assets");
 const OUT = process.argv[2] || path.join(__dirname, "notiontalk-live-challenge-webinar.pptx");
 const HUB = "https://judicious-ursinia-2c0.notion.site/412c5f01a4a4804cabd3c294d5d93fc9";
+const APPLY = "https://www.groble.im/products/qhawSP"; // live challenge sign-up page
 
 // ---------- palette ----------
 const THEMES = {
@@ -311,13 +312,21 @@ function divider({ section, part, title, sub, ill, time, color }) {
     ];
     st.forEach(([h, sub, t], i) => {
       const x = 0.45 + i * 3.07;
-      s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y: 2.4, w: 2.9, h: 2.6, rectRadius: 0.08, fill: { color: COL.card }, line: { color: COL.line }, shadow: shadow() });
-      s.addText(h, { x: x + 0.2, y: 2.52, w: 2.5, h: 0.45, fontFace: FONT, fontSize: 18, bold: true, color: COL.ink, margin: 0, isTextBox: true });
-      s.addText(sub, { x: x + 0.2, y: 2.97, w: 2.5, h: 0.4, fontFace: FONT, fontSize: 14, bold: true, color: COL.sub, margin: 0, isTextBox: true });
-      s.addText(t, { x: x + 0.2, y: 3.4, w: 2.5, h: 1.45, fontFace: FONT, fontSize: 13, color: COL.ink, valign: "top", margin: 0, isTextBox: true });
-      if (i < 2) s.addText("→", { x: x + 2.9, y: 3.4, w: 0.17, h: 0.5, fontSize: 16, bold: true, color: COL.ink, align: "center", margin: 0, isTextBox: true });
+      s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y: 2.32, w: 2.9, h: 1.85, rectRadius: 0.08, fill: { color: COL.card }, line: { color: COL.line }, shadow: shadow() });
+      s.addText(h, { x: x + 0.2, y: 2.4, w: 2.5, h: 0.42, fontFace: FONT, fontSize: 17, bold: true, color: COL.ink, margin: 0, isTextBox: true });
+      s.addText(sub, { x: x + 0.2, y: 2.82, w: 2.5, h: 0.35, fontFace: FONT, fontSize: 13, bold: true, color: COL.sub, margin: 0, isTextBox: true });
+      s.addText(t, { x: x + 0.2, y: 3.2, w: 2.5, h: 0.92, fontFace: FONT, fontSize: 12.5, color: COL.ink, valign: "top", margin: 0, isTextBox: true });
+      if (i < 2) s.addText("→", { x: x + 2.9, y: 3.0, w: 0.17, h: 0.5, fontSize: 16, bold: true, color: COL.ink, align: "center", margin: 0, isTextBox: true });
     });
-    s.addNotes("오늘 수업이 끝나면 라이브 챌린지가 시작됩니다. 다음 주 수요일 11월 25일 저녁 8시부터 8시 30분까지 온보딩에서 진행 방법과 인증 방법을 자세히 안내합니다. 챌린지는 계획하기, 적용하기, 나눔하기 세 단계로 진행됩니다. 인증 화면에는 실제 학생 정보를 넣지 않도록 해 주세요.");
+    // sign-up link (clickable) + QR
+    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.45, y: 4.3, w: 9.1, h: 0.78, rectRadius: 0.08, fill: { color: COL.mustardSoft }, line: { color: COL.mustard, width: 1.25 } });
+    s.addText([
+      { text: "라이브 챌린지 신청하기 (눌러서 열기)", options: { bold: true, color: COL.mustard, fontSize: 14, breakLine: true } },
+      { text: APPLY.replace("https://", ""), options: { color: COL.ink, fontSize: 13, underline: { style: "sng" }, hyperlink: { url: APPLY, tooltip: "라이브 챌린지 신청 페이지 열기" } } },
+    ], { x: 0.65, y: 4.3, w: 7.6, h: 0.78, fontFace: FONT, valign: "middle", margin: 0, isTextBox: true });
+    const aq = await QR.toDataURL(APPLY, { margin: 1, width: 400, color: { dark: "1F2937", light: "FFFFFF" } });
+    s.addImage({ data: aq.replace("data:", ""), x: 8.68, y: 4.35, w: 0.68, h: 0.68, altText: "라이브 챌린지 신청 페이지 QR 코드", hyperlink: { url: APPLY } });
+    s.addNotes("오늘 수업이 끝나면 라이브 챌린지가 시작됩니다. 다음 주 수요일 11월 25일 저녁 8시부터 8시 30분까지 온보딩에서 진행 방법과 인증 방법을 자세히 안내합니다. 챌린지는 계획하기, 적용하기, 나눔하기 세 단계로 진행됩니다. 인증 화면에는 실제 학생 정보를 넣지 않도록 해 주세요. 신청은 아래 링크나 QR로 할 수 있고, 링크는 채팅창에도 올려 드립니다.");
   }
   capSlide({ section: "라이브 챌린지", kicker: "라이브 챌린지 활동 안내", title: "노션 페이지에서 확인하기",
     lead: "온보딩 일정과 단계별 할 일이 수업 페이지에 정리되어 있어요",

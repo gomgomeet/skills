@@ -5,7 +5,7 @@ const path = require("path");
 
 const SEC = path.join(__dirname, "assets");
 const OUT = process.argv[2] || path.join(__dirname, "notiontalk-live-challenge-webinar.pptx");
-const HUB = "https://judicious-ursinia-2c0.notion.site/412c5f01a4a4804cabd3c294d5d93fc9";
+const HUB = "https://judicious-ursinia-2c0.notion.site/2-412c5f01a4a4804cabd3c294d5d93fc9";
 const APPLY = "https://www.groble.im/products/qhawSP"; // live challenge sign-up page
 
 // ---------- palette ----------
@@ -124,7 +124,7 @@ function capSlide({ section, kicker, title, lead, points = [], tip, image, notes
   return s;
 }
 
-function divider({ section, part, title, sub, ill, time, color }) {
+function divider({ section, part, title, sub, ill, time, color, lab }) {
   color = color || (PAL[section] || [COL.accent])[0];
   const s = newSlide(section);
   s.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: 4.3, h: 5.625, fill: { color }, line: { color } });
@@ -134,6 +134,7 @@ function divider({ section, part, title, sub, ill, time, color }) {
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.5, y: 3.5, w: 1.6, h: 0.45, rectRadius: 0.2, fill: { color: "FFFFFF" }, line: { color: "FFFFFF" } });
     s.addText(time, { x: 0.5, y: 3.5, w: 1.6, h: 0.45, fontFace: FONT, fontSize: 14, bold: true, color, align: "center", valign: "middle", margin: 0, isTextBox: true });
   }
+  if (lab) s.addText([{ text: "🧪 실습실  ", options: { bold: true } }, { text: lab }], { x: 0.5, y: 4.2, w: 3.5, h: 0.75, fontFace: FONT, fontSize: 12, color: "FFFFFF", valign: "top", margin: 0, isTextBox: true });
   s.addText(sub, { x: 4.75, y: 4.15, w: 4.9, h: 0.8, fontFace: FONT, fontSize: 15, color: COL.ink, valign: "middle", margin: 0, isTextBox: true });
   framedImage(s, ill, { x: 4.75, y: 0.5, w: 4.9, h: 3.5 });
   return s;
@@ -193,10 +194,10 @@ function divider({ section, part, title, sub, ill, time, color }) {
 
 
   // ===== 3. 오늘의 자료실 =====
-  capSlide({ section: "오프닝", kicker: "노션톡에서 함께 배워요", title: "오늘의 자료실: 노션 자동화 라이브 챌린지",
+  capSlide({ section: "오프닝", kicker: "[라이브챌2기] 노션 자동화 라이브 챌린지", title: "오늘의 자료실",
     lead: "오늘 수업과 챌린지 자료를 한 페이지에 모았어요",
-    points: ["교사를 위한 노션 활용 한눈에 보기", "수업 목차와 PART별 실습 페이지", "라이브 챌린지 활동 안내와 온보딩"],
-    image: img("hub_s02"), notes: "오늘 보시는 내용은 모두 이 노션 페이지에 정리되어 있습니다. 링크를 열어 두고 슬라이드와 함께 보시면 따라오기 쉽습니다." });
+    points: ["교사를 위한 노션 활용 한눈에 보기", "수업 목차와 PART별 실습 카드", "노션 자동화 실습실", "라이브 챌린지 2기 활동 안내와 신청"],
+    image: img("hub_s00"), notes: "오늘 보시는 내용은 모두 이 노션 페이지에 정리되어 있습니다. 링크를 열어 두고 슬라이드와 함께 보시면 따라오기 쉽습니다." });
 
   // ===== 4. 노션 활용 개괄 =====
   {
@@ -272,9 +273,9 @@ function divider({ section, part, title, sub, ill, time, color }) {
     const s = newSlide("오프닝");
     header(s, "5분 · 시작 전 세팅", "자료 페이지 열고 복제하기");
     const steps = [
-      ["QR 또는 아래 링크로 ‘노션 자동화 라이브 챌린지’ 페이지를 엽니다."],
-      ["오른쪽 위 ‘복제’ 아이콘을 눌러 내 워크스페이스로 가져옵니다."],
-      ["복제가 끝나면 채팅창에 ‘완료’를 남겨 주세요."],
+      ["QR이나 아래 링크로 ‘[라이브챌2기] 노션 자동화 라이브 챌린지’를 열어요."],
+      ["오른쪽 위 ‘복제’로 내 워크스페이스에 가져와요. 실습실도 함께 들어와요."],
+      ["‘노션 자동화 실습실’을 열어 DB가 보이면 채팅창에 ‘완료’!"],
     ];
     steps.forEach(([t], i) => {
       const y = 1.25 + i * 0.97;
@@ -286,8 +287,8 @@ function divider({ section, part, title, sub, ill, time, color }) {
     // live challenge page link (clickable)
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.45, y: 4.2, w: 5.9, h: 0.82, rectRadius: 0.08, fill: { color: COL.accentSoft }, line: { color: COL.accent, width: 1 } });
     s.addText([
-      { text: "라이브 챌린지 자료 페이지 링크 (눌러서 열기)", options: { bold: true, color: COL.accent, fontSize: 13, breakLine: true } },
-      { text: HUB.replace("https://", ""), options: { color: COL.ink, fontSize: 12, underline: { style: "sng" }, hyperlink: { url: HUB, tooltip: "노션 자동화 라이브 챌린지 페이지 열기" } } },
+      { text: "[라이브챌2기] 자료 페이지 링크 (눌러서 열기)", options: { bold: true, color: COL.accent, fontSize: 13, breakLine: true } },
+      { text: HUB.replace("https://", ""), options: { color: COL.ink, fontSize: 10.5, underline: { style: "sng" }, hyperlink: { url: HUB, tooltip: "노션 자동화 라이브 챌린지 페이지 열기" } } },
     ], { x: 0.65, y: 4.2, w: 5.6, h: 0.82, fontFace: FONT, valign: "middle", margin: 0, isTextBox: true });
     const qr = await QR.toDataURL(HUB, { margin: 1, width: 600, color: { dark: "1F2937", light: "FFFFFF" } });
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 6.7, y: 1.3, w: 2.85, h: 3.7, rectRadius: 0.1, fill: { color: COL.card }, line: { color: COL.accent, width: 1.5 } });
@@ -298,6 +299,13 @@ function divider({ section, part, title, sub, ill, time, color }) {
   }
 
 
+
+  // ===== 노션 자동화 실습실 =====
+  capSlide({ section: "오프닝", kicker: "실습 준비", title: "노션 자동화 실습실 둘러보기",
+    lead: "DB·속성·연습용 행은 준비되어 있고, 템플릿·버튼·수식·자동화는 직접 만들어요",
+    points: ["학생 명렬표 · 출결 기록 · 관찰 기록 (모두 가상)", "업무 연습 · 주간 업무 템플릿 · 수업 템플릿 · 업무 버튼 실습 DB", "PART별로 쓸 DB가 표에 정리되어 있어요"],
+    tip: "관계형 연결부터 확인하고, 실제 학생 정보는 넣지 않아요.",
+    image: img("lab_s02"), notes: "복제한 페이지 안의 노션 자동화 실습실을 열어 주세요. 학생 명렬표, 출결 기록, 관찰 기록, 업무 연습 DB 등이 미리 준비되어 있습니다. 데이터베이스와 속성, 연습용 행은 준비해 두었고, 오늘은 그 위에 템플릿, 버튼, 수식, 자동화를 직접 만들어 봅니다. 표를 보면 PART마다 어떤 DB를 쓰는지 정리되어 있어요. 학생 이름은 모두 가상입니다." });
 
   // ===== 라이브 챌린지 안내 =====
   {
@@ -357,7 +365,7 @@ function divider({ section, part, title, sub, ill, time, color }) {
   }
   // ===== PART 1 =====
   const P1 = "PART 1 DB와 템플릿";
-  divider({ section: P1, part: "PART 1", title: "데이터베이스와\n템플릿", sub: "같은 모양의 기록을 모으고, 새 페이지마다 같은 틀과 기본값을 자동으로 채워요", ill: img("ill_tpl"), time: "20분" });
+  divider({ section: P1, part: "PART 1", title: "데이터베이스와\n템플릿", sub: "같은 모양의 기록을 모으고, 새 페이지마다 같은 틀과 기본값을 자동으로 채워요", ill: img("ill_tpl"), time: "20분", lab: "학생 명렬표 · 출결 기록 · 주간 업무 템플릿 실습 DB" });
   capSlide({ section: P1, kicker: "PART 1 · 데이터베이스 구성하기", title: "어떤 속성을 쓸까요?",
     lead: "속성을 잘 설계하면 템플릿·버튼·자동화가 모두 그 위에서 움직여요",
     points: ["선택·상태: 유형, 진행 단계", "날짜·체크박스: 마감일, 서류 제출", "관계형: 다른 DB와 연결", "버튼·수식: 자동화와 계산"],
@@ -397,7 +405,7 @@ function divider({ section, part, title, sub, ill, time, color }) {
 
   // ===== PART 2 =====
   const P2 = "PART 2 버튼 자동화";
-  divider({ section: P2, part: "PART 2", title: "버튼\n자동화", sub: "누르면 정해 둔 일이 한 번에 처리되는 ‘직접 누르는 스위치’", ill: img("ill_btn"), time: "25분" });
+  divider({ section: P2, part: "PART 2", title: "버튼\n자동화", sub: "누르면 정해 둔 일이 한 번에 처리되는 ‘직접 누르는 스위치’", ill: img("ill_btn"), time: "25분", lab: "버튼 연습 공간 · 출결 기록 · 관찰 기록 · 업무 버튼 실습 DB" });
   capSlide({ section: P2, kicker: "PART 2-1 · 버튼으로 템플릿 페이지 자동화하기", title: "먼저 유형 템플릿 만들기",
     lead: "버튼이 불러올 템플릿을 먼저 준비해요",
     points: ["새 템플릿 → 유형 병결, 날짜 오늘", "••• → 복제로 병조퇴, 병지각, 체험학습"],
@@ -443,7 +451,7 @@ function divider({ section, part, title, sub, ill, time, color }) {
 
   // ===== PART 3 =====
   const P3 = "PART 3 DB 자동화";
-  divider({ section: P3, part: "PART 3", title: "데이터베이스\n자동화", sub: "트리거가 생기면 다음 작업을 노션이 대신 처리하는 ‘조건 스위치’", ill: img("ill_auto"), time: "15분" });
+  divider({ section: P3, part: "PART 3", title: "데이터베이스\n자동화", sub: "트리거가 생기면 다음 작업을 노션이 대신 처리하는 ‘조건 스위치’", ill: img("ill_auto"), time: "15분", lab: "업무 연습 DB · 출결 기록 DB" });
   capSlide({ section: P3, kicker: "PART 3 · 데이터베이스 자동화", title: "자동화의 기본 공식: 트리거 → 동작",
     lead: "트리거(언제?) → 동작(무엇을?)",
     points: ["트리거: 상태가 완료로 바뀜, 페이지 추가", "동작: 완료 확인 체크, 제목 자동 입력", "버튼은 직접 누르는 스위치, DB 자동화는 조건 스위치"],
@@ -465,7 +473,7 @@ function divider({ section, part, title, sub, ill, time, color }) {
 
   // ===== 심화 =====
   const P4 = "심화";
-  divider({ section: P4, part: "심화", title: "꼭 활용하면 좋은\n노션 수식 7가지", sub: "버튼 수식과 변수까지, 누르는 순간 계산해서 값을 써 넣어요", ill: img("ill_fx"), time: "10분" });
+  divider({ section: P4, part: "심화", title: "꼭 활용하면 좋은\n노션 수식 7가지", sub: "버튼 수식과 변수까지, 누르는 순간 계산해서 값을 써 넣어요", ill: img("ill_fx"), time: "10분", lab: "업무 연습 DB · 변수 정의 실습실" });
   capSlide({ section: P4, kicker: "심화 · 수식 7가지", title: "한눈에 보기",
     lead: "수식 속성 2 · 버튼 수식 2 · 변수 1 · DB 자동화 1 · 관계형 1",
     points: ["1 마감 상태  2 진행 막대", "3 칭찬 +1  4 과제 배부·완료 시각", "5 상담 후속 확인(변수)  6 출결 제목", "7 키워드 기록 개수"],
@@ -542,7 +550,7 @@ function divider({ section, part, title, sub, ill, time, color }) {
     s.addText("Q & A", { x: 3.7, y: 1.0, w: 5.8, h: 0.9, fontFace: HFONT, fontSize: 40, bold: HBOLD, color: COL.accent, margin: 0, isTextBox: true });
     s.addText("혼자 하기 어려운 자동화, 라이브 챌린지로 함께 완성해요!", { x: 3.7, y: 1.95, w: 5.8, h: 0.6, fontFace: FONT, fontSize: 20, bold: true, color: COL.ink, margin: 0, isTextBox: true });
     s.addText([
-      { text: "자료 페이지: 노션 자동화 라이브 챌린지", options: { breakLine: true } },
+      { text: "자료 페이지: [라이브챌2기] 노션 자동화 라이브 챌린지", options: { breakLine: true } },
       { text: "커뮤니티: 노션톡 · 블로그: 곰곰이쌤", options: { breakLine: true } },
       { text: "챌린지 온보딩: 11월 25일(수) 저녁 8:00~8:30" },
     ], { x: 3.7, y: 2.7, w: 5.8, h: 1.3, fontFace: FONT, fontSize: 15, color: COL.sub, paraSpaceAfter: 6, margin: 0, isTextBox: true });
